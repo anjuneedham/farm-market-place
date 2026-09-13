@@ -20,7 +20,7 @@ export function ExpansionSection() {
             <p className="text-micro text-accent-600">Caribbean expansion vision</p>
             <h2 className="text-h1 mt-3">Architected for the region</h2>
             <p className="mt-4 text-ink-600">
-              AgriLoop's location, currency and category architecture works for any Caribbean
+              AgriLoop&apos;s location, currency and category architecture works for any Caribbean
               market — no rewrite required. These markets are modelled and ready to switch on as
               AgriLoop grows.
             </p>

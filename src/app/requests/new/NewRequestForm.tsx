@@ -23,7 +23,7 @@ export function NewRequestForm({
   if (!canPost) {
     return (
       <div className="rounded-lg border border-sun-300 bg-sun-50 p-5">
-        <p className="font-semibold text-ink-900">You've reached the free plan's open request limit.</p>
+        <p className="font-semibold text-ink-900">You&apos;ve reached the free plan&apos;s open request limit.</p>
         <p className="mt-1.5 text-sm text-ink-600">
           Close an existing request, or upgrade to Premium for unlimited advanced buyer requests.
         </p>

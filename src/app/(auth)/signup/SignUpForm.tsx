@@ -149,7 +149,7 @@ export function SignUpForm() {
       </Button>
 
       <p className="text-center text-xs text-ink-400">
-        By joining, you agree to AgriLoop's{' '}
+        By joining, you agree to AgriLoop&apos;s{' '}
         <a href="/guidelines" className="underline">
           Community Guidelines
         </a>

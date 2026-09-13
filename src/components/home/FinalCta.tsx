@@ -6,7 +6,7 @@ export function FinalCta() {
       <div className="mx-auto max-w-[1280px] px-4 py-16 text-center sm:px-6">
         <h2 className="text-h1 text-white">Ready to connect, grow and trade?</h2>
         <p className="mx-auto mt-3 max-w-xl text-brand-100">
-          Join farmers, buyers and agricultural businesses building Jamaica's digital
+          Join farmers, buyers and agricultural businesses building Jamaica&apos;s digital
           agricultural ecosystem.
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">

@@ -13,7 +13,7 @@ export default async function AdminLocationsPage() {
     <div>
       <h1 className="text-h1 mb-1">Locations</h1>
       <p className="mb-6 text-ink-600">
-        Jamaica's 14 parishes are seeded and active. Other Caribbean markets are modelled and can
+        Jamaica&apos;s 14 parishes are seeded and active. Other Caribbean markets are modelled and can
         be switched live once seed supply and demand exist there.
       </p>
 

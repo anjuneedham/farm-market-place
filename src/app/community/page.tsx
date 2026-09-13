@@ -24,7 +24,7 @@ export default async function CommunityPage() {
         <div>
           <h1 className="text-h1">AgriLoop Community</h1>
           <p className="mt-1 max-w-xl text-ink-600">
-            Free for everyone. Ask questions, share what works, and find your parish's farmers,
+            Free for everyone. Ask questions, share what works, and find your parish&apos;s farmers,
             buyers and businesses.
           </p>
         </div>

@@ -71,7 +71,7 @@ export default async function PremiumPage({
           </p>
           {isPremium ? (
             <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-sun-500/20 px-4 py-2 text-sm font-medium text-sun-300">
-              <Check className="h-4 w-4" /> You're already Premium
+              <Check className="h-4 w-4" /> You&apos;re already Premium
             </p>
           ) : null}
         </div>

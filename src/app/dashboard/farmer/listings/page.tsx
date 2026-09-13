@@ -8,6 +8,7 @@ import { AvailabilityBadge, FeaturedBadge } from '@/components/ui/Badge';
 import { ListingPrice } from '@/components/ui/Money';
 import { EmptyState } from '@/components/ui/States';
 import { ListingStatusMenu } from './ListingStatusMenu';
+import { isFuture } from '@/lib/db/repositories/common';
 
 export const metadata: Metadata = { title: 'My Listings' };
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,10 @@ export const dynamic = 'force-dynamic';
 export default async function FarmerListingsPage() {
   const { user } = await requireRole(['FARMER', 'BUSINESS'], '/dashboard/farmer/listings');
   const results = db.listings.forSeller(user.id, { perPage: 60 });
+  const items = results.items.map((listing) => ({
+    listing,
+    isFeatured: isFuture(listing.featuredUntil),
+  }));
 
   return (
     <DashboardShell
@@ -23,14 +28,14 @@ export default async function FarmerListingsPage() {
       activeHref="/dashboard/farmer/listings"
       action={<ButtonLink href="/dashboard/farmer/listings/new">Add Listing</ButtonLink>}
     >
-      {results.items.length > 0 ? (
+      {items.length > 0 ? (
         <div className="divide-y divide-line rounded-lg border border-line bg-surface">
-          {results.items.map((listing) => (
+          {items.map(({ listing, isFeatured }) => (
             <div key={listing.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate font-medium text-ink-900">{listing.title}</p>
-                  {listing.featuredUntil && Date.parse(listing.featuredUntil) > Date.now() ? <FeaturedBadge /> : null}
+                  {isFeatured ? <FeaturedBadge /> : null}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <AvailabilityBadge availability={listing.availability} />
