@@ -1,0 +1,219 @@
+@import 'tailwindcss';
+
+/* ───────────────────────────────────────────────────────────────────────────
+   AgriLoop design tokens. See docs/DESIGN_SYSTEM.md.
+   No component may declare a raw colour value; everything comes from here.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-brand-50: #f1faf5;
+  --color-brand-100: #dcf2e6;
+  --color-brand-200: #bbe4cd;
+  --color-brand-300: #8ed0ac;
+  --color-brand-400: #56b686;
+  --color-brand-500: #178f60;
+  --color-brand-600: #12704b;
+  --color-brand-700: #0d5138;
+  --color-brand-800: #0a3b29;
+  --color-brand-900: #06281c;
+
+  --color-accent-50: #fef8f0;
+  --color-accent-100: #fdf0e0;
+  --color-accent-300: #f0b66d;
+  --color-accent-500: #db7b12;
+  --color-accent-600: #c2620a;
+  --color-accent-700: #984c08;
+
+  --color-sun-50: #fefaef;
+  --color-sun-100: #fdf3dc;
+  --color-sun-300: #f5cd72;
+  --color-sun-500: #e8a317;
+  --color-sun-600: #c4850c;
+  --color-sun-700: #96650a;
+
+  --color-ink-900: #0c1611;
+  --color-ink-800: #1b2a23;
+  --color-ink-600: #47554e;
+  --color-ink-500: #5f6d66;
+  --color-ink-400: #7d8a84;
+  --color-ink-300: #a8b2ad;
+
+  --color-line: #e2e8e4;
+  --color-line-strong: #cbd5cf;
+  --color-surface: #ffffff;
+  --color-canvas: #f7f9f8;
+
+  --color-positive: #1a7f4f;
+  --color-positive-soft: #e6f4ec;
+  --color-warning: #b45309;
+  --color-warning-soft: #fdf2e3;
+  --color-danger: #b4242c;
+  --color-danger-soft: #fceceb;
+  --color-info: #1d4ed8;
+  --color-info-soft: #e8eefc;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --shadow-card: 0 1px 2px rgba(12, 22, 17, 0.04);
+  --shadow-float: 0 4px 16px rgba(12, 22, 17, 0.08);
+  --shadow-overlay: 0 16px 48px rgba(12, 22, 17, 0.16);
+
+  --breakpoint-xs: 24rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--color-ink-900);
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  /* Focus is never removed — only restyled. docs/DESIGN_SYSTEM.md §10. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .text-display {
+    font-size: clamp(2.25rem, 1.6rem + 3.2vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+  }
+
+  .text-h1 {
+    font-size: clamp(1.75rem, 1.4rem + 1.6vw, 2.25rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 680;
+  }
+
+  .text-h2 {
+    font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+    line-height: 1.2;
+    font-weight: 660;
+  }
+
+  .text-micro {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Money must align in columns. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .prose-agriloop {
+    max-width: 72ch;
+  }
+
+  .prose-agriloop p {
+    margin-bottom: 1rem;
+    color: var(--color-ink-800);
+  }
+
+  .prose-agriloop h2 {
+    font-size: 1.375rem;
+    margin: 2rem 0 0.75rem;
+  }
+
+  .prose-agriloop h3 {
+    font-size: 1.125rem;
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  .prose-agriloop ul,
+  .prose-agriloop ol {
+    margin: 0 0 1rem 1.25rem;
+    color: var(--color-ink-800);
+  }
+
+  .prose-agriloop ul {
+    list-style: disc;
+  }
+
+  .prose-agriloop ol {
+    list-style: decimal;
+  }
+
+  .prose-agriloop li {
+    margin-bottom: 0.375rem;
+  }
+
+  .prose-agriloop a {
+    color: var(--color-brand-600);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .prose-agriloop strong {
+    font-weight: 650;
+    color: var(--color-ink-900);
+  }
+
+  /* Bottom navigation clearance on mobile. */
+  .pb-safe-nav {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 1024px) {
+    .pb-safe-nav {
+      padding-bottom: 0;
+    }
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
