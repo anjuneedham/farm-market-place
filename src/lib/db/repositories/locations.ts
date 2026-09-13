@@ -1,4 +1,4 @@
-import { data } from '../datasource';
+import { data, mutate } from '../datasource';
 import type { Community, Country, Region } from '@/lib/types';
 
 export const locations = {
@@ -38,6 +38,13 @@ export const locations = {
 
   community(id: string): Community | undefined {
     return data().communities.find((c) => c.id === id);
+  },
+
+  setLive(code: string, isLive: boolean): void {
+    mutate((db) => {
+      const country = db.countries.find((c) => c.code === code.toUpperCase());
+      if (country) country.isLive = isLive;
+    });
   },
 
   /** True when the region belongs to the claimed country. Used for validation. */
