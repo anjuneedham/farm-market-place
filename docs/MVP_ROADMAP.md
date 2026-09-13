@@ -66,6 +66,11 @@ Tobago, Barbados, Guyana, Grenada, Dominica, Saint Lucia, St. Vincent & the Gren
 ## Deliberately out of scope for the MVP
 
 AI assistant · market intelligence aggregates · escrow · logistics and delivery routing ·
-card payments and checkout · farm accounting · weather intelligence · any market other than
-Jamaica marked live. Each has an interface and an honest "not available yet" UI state. None has
-a button that pretends to work.
+farm accounting · weather intelligence · any market other than Jamaica marked live. Each has an
+interface and an honest "not available yet" UI state. None has a button that pretends to work.
+
+**Premium checkout is the one payment flow that is live** (PayPal Express Checkout, when
+`PAYMENT_PROVIDER=paypal` — docs/PREMIUM_STRATEGY.md §7); marketplace transactions between
+buyers and sellers remain off-platform. A native mobile app is a separate, larger undertaking —
+see docs/MOBILE_APP_NOTES.md, which specifically covers why this same PayPal integration cannot
+be reused unmodified inside a native app due to Apple/Google in-app-purchase policy.

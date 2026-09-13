@@ -52,19 +52,41 @@ export type Provider = {
 // ── Payments ─────────────────────────────────────────────────────────────────
 
 export type CheckoutInput = {
-  orderId: string;
+  /**
+   * What this charge is for, in a form the provider can echo back unmodified
+   * on capture (e.g. PayPal's `custom_id`). Never trust the client's own copy
+   * of this value at capture time — always read back what the provider
+   * returns and re-derive authorization from that.
+   */
+  metadata: Record<string, string>;
   currency: string;
   amountMinor: number;
   description: string;
   buyerEmail?: string;
 };
 
-export type CheckoutSession = { id: string; url: string };
-export type PaymentRecord = { reference: string; status: string; amountMinor: number };
+/**
+ * `url` is present for redirect-based checkout (e.g. Stripe Checkout) and
+ * absent for button/SDK-driven flows (e.g. PayPal Smart Buttons), where the
+ * client renders the provider's own UI using `id` directly.
+ */
+export type CheckoutSession = { id: string; url?: string };
+
+export type PaymentRecord = {
+  reference: string;
+  status: string;
+  amountMinor: number;
+  currency?: string;
+  /** Echoed back from the checkout's metadata — the source of truth for what was paid for. */
+  metadata?: Record<string, string>;
+};
+
 export type PayoutInput = { sellerId: string; currency: string; amountMinor: number };
 export type PayoutRecord = { reference: string; status: string };
 
 export interface PaymentService extends Provider {
+  /** ISO 4217 codes this provider can actually settle. Check before offering checkout. */
+  supportedCurrencies(): readonly string[];
   createCheckout(input: CheckoutInput): Promise<ServiceResult<CheckoutSession>>;
   capture(reference: string): Promise<ServiceResult<PaymentRecord>>;
   refund(reference: string, amountMinor?: number): Promise<ServiceResult<PaymentRecord>>;

@@ -152,7 +152,7 @@ export const listings = {
     const sort = filters.sort ?? 'recent';
     views.sort((a, b) => {
       // Featured listings are additional placement above an unmodified organic
-      // list — they are always labelled. See docs/PREMIUM_STRATEGY.md §7.
+      // list — they are always labelled. See docs/PREMIUM_STRATEGY.md §8.
       if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
       switch (sort) {
         case 'price_asc':

@@ -80,6 +80,20 @@ export const adminService = {
     return ok(null);
   },
 
+  /**
+   * The PayPal-specific price/currency, separate from the plan's local-
+   * currency price — PayPal cannot settle in most of AgriLoop's Caribbean
+   * currencies. See docs/PREMIUM_STRATEGY.md § Online checkout currency.
+   */
+  updatePlanPaypalPrice(planId: string, priceMinor: number, currency: string): ServiceResult<null> {
+    const plan = db.premium.updatePlan(planId, {
+      paypalPriceMinor: priceMinor,
+      paypalCurrency: currency.toUpperCase(),
+    });
+    if (!plan) return fail('not_found', 'Plan not found.');
+    return ok(null);
+  },
+
   grantSubscription(userId: string, planId: string, days: number): ServiceResult<null> {
     const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     db.premium.grantSubscription(userId, planId, until);

@@ -2,6 +2,7 @@ import { UnavailableAIService } from './ai';
 import { ConsoleEmailService, DisabledEmailService } from './email';
 import { DataBackedMarketIntelligenceService } from './market-intelligence';
 import { InAppNotificationService } from './notifications';
+import { PayPalPaymentService } from './paypal';
 import { UnavailablePaymentService } from './payments';
 import { LocalStorageService } from './storage';
 import type {
@@ -38,10 +39,19 @@ function createStorageService(): StorageService {
   }
 }
 
+function createPaymentService(): PaymentService {
+  switch (process.env.PAYMENT_PROVIDER) {
+    case 'paypal':
+      return new PayPalPaymentService();
+    default:
+      return new UnavailablePaymentService();
+  }
+}
+
 export const emailService: EmailService = createEmailService();
 export const storageService: StorageService = createStorageService();
 export const notificationService: NotificationService = new InAppNotificationService();
-export const paymentService: PaymentService = new UnavailablePaymentService();
+export const paymentService: PaymentService = createPaymentService();
 export const aiService: AIService = new UnavailableAIService();
 export const weatherService: WeatherService = new UnavailableWeatherService();
 export const marketIntelligenceService: MarketIntelligenceService =

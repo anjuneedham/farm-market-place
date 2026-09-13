@@ -210,7 +210,7 @@ Every third-party capability sits behind an interface in `src/lib/integrations`,
 | `StorageService` | Local filesystem, size/type limited | S3 / R2 / Supabase Storage |
 | `EmailService` | Console transport in dev, no-op otherwise | Resend / SES |
 | `NotificationService` | In-app notifications (real) | + email, web push |
-| `PaymentService` | `UnavailablePaymentService` — flows are off-platform | Stripe, local rails, escrow |
+| `PaymentService` | `PayPalPaymentService` for Premium checkout when `PAYMENT_PROVIDER=paypal`; `UnavailablePaymentService` otherwise — marketplace flows stay off-platform either way | Stripe, local rails, escrow, native-app IAP (see docs/MOBILE_APP_NOTES.md) |
 | `AIService` | `UnavailableAIService` — UI states "coming soon" and is disabled | Claude-backed farm assistant |
 | `WeatherService` | Not configured | Met Service / provider |
 | `MarketIntelligenceService` | Returns `insufficient-data` until thresholds are met | Real aggregates |
@@ -223,6 +223,14 @@ explains what has to exist first. This is enforced by the `FeatureStatus` compon
 
 Deliberately *not* built (architecture and seams exist; implementations do not):
 
-online payments and checkout, escrow, logistics/delivery routing, the AI assistant, weather
-intelligence, market-intelligence aggregates, full farm accounting, and any Caribbean market
-other than Jamaica being marked live.
+marketplace escrow, logistics/delivery routing, the AI assistant, weather intelligence,
+market-intelligence aggregates, full farm accounting, and any Caribbean market other than
+Jamaica being marked live.
+
+**Online checkout is the one exception.** AgriLoop Premium has a real PayPal Express Checkout
+path (docs/PREMIUM_STRATEGY.md § Online checkout) — it's the only real-money flow in the
+product; every marketplace transaction between a buyer and a seller is still arranged
+off-platform, unaffected by this. PayPal cannot settle in JMD or AgriLoop's other Caribbean
+currencies, so a plan's online price is a separate, admin-set field
+(`SubscriptionPlan.paypalPriceMinor`/`paypalCurrency`) from its listed local-currency price —
+checkout stays honestly unavailable for a plan until an admin sets one.

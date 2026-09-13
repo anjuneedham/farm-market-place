@@ -107,7 +107,30 @@ Premium is sold at the moment of demonstrated need, not on a pricing page nobody
 Each prompt names the specific benefit, not "go Premium". No interstitials, no modal on page
 load, no dark patterns, and the free path is always visible next to the upgrade.
 
-## 7. What Premium must never become
+## 7. Online checkout
+
+`/premium/start?plan=<id>` carries PayPal Express Checkout (`src/lib/integrations/paypal.ts`,
+REST Orders API v2 — no SDK dependency). It is the one real-money flow in AgriLoop; every
+marketplace transaction between a buyer and a seller is still arranged off-platform
+(docs/PRODUCT_ARCHITECTURE.md §9).
+
+**Currency.** PayPal cannot settle in JMD or any of AgriLoop's other Caribbean currencies (TTD,
+XCD, GYD, HTG, DOP). A `SubscriptionPlan`'s online price is therefore a separate, admin-set
+field — `paypalPriceMinor`/`paypalCurrency`, edited in `/admin/premium` — from its listed
+local-currency price. A plan with no PayPal price set shows the honest "not available yet"
+panel rather than a broken or silently-wrong-currency checkout.
+
+**Authorization.** The client never tells the server what plan it paid for. Creating a checkout
+writes `{userId, planId}` into the PayPal order's `custom_id`; capturing reads that back from
+PayPal's own response and verifies the session user matches before granting anything — a user
+cannot activate a different plan than the one actually charged.
+
+**Mobile app.** This integration is for the web app. A native app cannot embed it as-is —
+Apple's and Google's app store policies generally require their own in-app purchase systems for
+digital subscriptions bought inside a native app. See docs/MOBILE_APP_NOTES.md before wiring up
+Premium purchases in a native build.
+
+## 8. What Premium must never become
 
 * A wall in front of Community or the core Academy.
 * A requirement to contact a seller or respond to a buyer request.

@@ -130,7 +130,7 @@ export default async function PremiumPage({
                       <p className="mt-1 text-xs text-ink-500">{plan.trialDays}-day free trial</p>
                     ) : null}
                     <ButtonLink
-                      href={user ? '/premium/start' : `/signup?role=${audience === 'BUSINESS' ? 'BUSINESS' : audience === 'BUYER' ? 'BUYER' : 'FARMER'}`}
+                      href={user ? `/premium/start?plan=${plan.id}` : `/signup?role=${audience === 'BUSINESS' ? 'BUSINESS' : audience === 'BUYER' ? 'BUYER' : 'FARMER'}`}
                       variant="premium"
                       fullWidth
                       className="mt-4"

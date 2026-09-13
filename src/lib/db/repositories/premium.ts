@@ -90,11 +90,19 @@ export const premium = {
   },
 
   /**
-   * Grants a subscription without taking payment. The MVP has no payment
-   * provider (docs/PRODUCT_ARCHITECTURE.md §9), so this exists only for admin
-   * activation — it is never reachable from a user-facing "subscribe" button.
+   * Grants or renews a subscription. `provider`/`providerRef` default to a
+   * manual admin grant (docs/PRODUCT_ARCHITECTURE.md §9's original MVP path,
+   * still used by /admin/premium); a real payment capture — currently only
+   * PayPal — passes its own provider name and the capture id so the
+   * subscription's origin stays auditable.
    */
-  grantSubscription(userId: string, planId: string, periodEnd: string): Subscription {
+  grantSubscription(
+    userId: string,
+    planId: string,
+    periodEnd: string,
+    provider: string = 'manual',
+    providerRef?: string,
+  ): Subscription {
     return mutate((db) => {
       const existing = db.subscriptions.find((s) => s.userId === userId);
       if (existing) {
@@ -103,6 +111,8 @@ export const premium = {
         existing.currentPeriodEnd = periodEnd;
         existing.cancelAtPeriodEnd = false;
         existing.cancelledAt = undefined;
+        existing.provider = provider;
+        existing.providerRef = providerRef;
         return existing;
       }
 
@@ -114,7 +124,8 @@ export const premium = {
         startedAt: nowIso(),
         currentPeriodEnd: periodEnd,
         cancelAtPeriodEnd: false,
-        provider: 'manual',
+        provider,
+        providerRef,
         isDemoData: false,
       };
       db.subscriptions.push(subscription);

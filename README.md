@@ -73,10 +73,13 @@ src/lib/
 ## What's real vs. architected
 
 The MVP is fully functional end to end: sign up, list products, post buyer requests, message,
-review, moderate, administer. What is **deliberately not implemented** — AI assistant, payments,
-market intelligence, escrow — has a working interface and an honest "not available yet" UI state
-rather than a simulated response. See
-[docs/MVP_ROADMAP.md § Deliberately out of scope](./docs/MVP_ROADMAP.md#deliberately-out-of-scope-for-the-mvp).
+review, moderate, administer, and pay for Premium via PayPal Express Checkout (set
+`PAYMENT_PROVIDER=paypal` — see [docs/PREMIUM_STRATEGY.md § Online checkout](./docs/PREMIUM_STRATEGY.md#7-online-checkout)).
+Marketplace transactions between buyers and sellers are still arranged off-platform by design.
+What is **deliberately not implemented** — the AI assistant, market intelligence, escrow — has a
+working interface and an honest "not available yet" UI state rather than a simulated response.
+See [docs/MVP_ROADMAP.md § Deliberately out of scope](./docs/MVP_ROADMAP.md#deliberately-out-of-scope-for-the-mvp)
+and [docs/MOBILE_APP_NOTES.md](./docs/MOBILE_APP_NOTES.md) before adding a native mobile app.
 
 ## Known limitations (MVP)
 

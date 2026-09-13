@@ -690,12 +690,21 @@ export type SubscriptionPlan = {
   slug: string;
   audience: PlanAudience;
   interval: BillingInterval;
-  /** Minor units. Admin-editable. Never hardcoded in application code. */
+  /** Minor units, in `currency`. Admin-editable. Never hardcoded in application code. */
   priceMinor: number;
   currency: string;
   trialDays: number;
   isActive: boolean;
   sortOrder: number;
+  /**
+   * Online checkout price, separate from `priceMinor`/`currency` because
+   * PayPal cannot settle in most of AgriLoop's local currencies (JMD, TTD,
+   * XCD, GYD, HTG, DOP are all unsupported). Null until an admin sets one —
+   * the checkout button stays honestly unavailable for that plan until then.
+   * See docs/PREMIUM_STRATEGY.md § Online checkout currency.
+   */
+  paypalPriceMinor?: number;
+  paypalCurrency?: string;
 };
 
 export type BenefitCategory =

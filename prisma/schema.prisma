@@ -1029,6 +1029,11 @@ model SubscriptionPlan {
   trialDays   Int             @default(0)
   isActive    Boolean         @default(true)
   sortOrder   Int             @default(0)
+  // Online checkout price/currency, distinct from priceMinor/currency because
+  // PayPal cannot settle in most Caribbean currencies (JMD, TTD, XCD, GYD,
+  // HTG, DOP). Null until an admin sets one for this plan.
+  paypalPriceMinor Int?
+  paypalCurrency   String?    @db.VarChar(3)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 

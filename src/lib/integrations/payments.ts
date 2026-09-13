@@ -9,12 +9,14 @@ import {
 } from './types';
 
 /**
- * The MVP takes no payments. The marketplace flow is
- * discover → contact → negotiate → arrange payment → complete, off-platform.
+ * The marketplace flow is still discover → contact → negotiate → arrange
+ * payment → complete, off-platform — this class is what call sites fall back
+ * to when no payment provider is configured (see PayPalPaymentService for the
+ * one provider that is actually wired up, used for Premium checkout).
  *
  * This implementation exists so that every call site is already written against
- * the interface. When a provider is added (Stripe, a local rail, escrow), it
- * implements PaymentService and is selected in index.ts — no call site changes.
+ * the interface. Adding a second provider (Stripe, a local rail, escrow) means
+ * implementing PaymentService and selecting it in index.ts — no call site changes.
  */
 export class UnavailablePaymentService implements PaymentService {
   isConfigured(): boolean {
@@ -23,6 +25,10 @@ export class UnavailablePaymentService implements PaymentService {
 
   status(): string {
     return 'Online payments are not enabled. Buyers and sellers arrange payment directly.';
+  }
+
+  supportedCurrencies(): readonly string[] {
+    return [];
   }
 
   async createCheckout(_input: CheckoutInput): Promise<ServiceResult<never>> {

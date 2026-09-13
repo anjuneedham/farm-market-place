@@ -8,6 +8,11 @@ import { daysAhead } from './helpers';
  * application code reads a hardcoded subscription price. Adding a market means
  * adding plan rows in that country's currency; nothing else changes.
  * See docs/PREMIUM_STRATEGY.md §4.
+ *
+ * `paypalPriceMinor`/`paypalCurrency` are separate, illustrative USD figures
+ * (roughly converted at ~157 JMD/USD at seed time) — PayPal cannot settle in
+ * JMD at all, so online checkout needs its own admin-set price. Treat these
+ * as a starting point to adjust in /admin/premium, not a real target price.
  */
 
 export function seedPlans(): SubscriptionPlan[] {
@@ -21,6 +26,8 @@ export function seedPlans(): SubscriptionPlan[] {
       interval: 'MONTHLY',
       priceMinor: 190000,
       currency: 'JMD',
+      paypalPriceMinor: 1200,
+      paypalCurrency: 'USD',
       trialDays: 14,
       isActive: true,
       sortOrder: 0,
@@ -34,6 +41,8 @@ export function seedPlans(): SubscriptionPlan[] {
       interval: 'YEARLY',
       priceMinor: 1900000,
       currency: 'JMD',
+      paypalPriceMinor: 12000,
+      paypalCurrency: 'USD',
       trialDays: 14,
       isActive: true,
       sortOrder: 1,
@@ -47,6 +56,8 @@ export function seedPlans(): SubscriptionPlan[] {
       interval: 'MONTHLY',
       priceMinor: 145000,
       currency: 'JMD',
+      paypalPriceMinor: 900,
+      paypalCurrency: 'USD',
       trialDays: 14,
       isActive: true,
       sortOrder: 2,
@@ -60,6 +71,8 @@ export function seedPlans(): SubscriptionPlan[] {
       interval: 'YEARLY',
       priceMinor: 1450000,
       currency: 'JMD',
+      paypalPriceMinor: 9200,
+      paypalCurrency: 'USD',
       trialDays: 14,
       isActive: true,
       sortOrder: 3,
@@ -73,6 +86,8 @@ export function seedPlans(): SubscriptionPlan[] {
       interval: 'MONTHLY',
       priceMinor: 320000,
       currency: 'JMD',
+      paypalPriceMinor: 2000,
+      paypalCurrency: 'USD',
       trialDays: 14,
       isActive: true,
       sortOrder: 4,

@@ -104,6 +104,20 @@ export async function updatePlanPriceAction(planId: string, priceMinor: number):
   return {};
 }
 
+export async function updatePlanPaypalPriceAction(
+  planId: string,
+  priceMinor: number,
+  currency: string,
+): Promise<{ error?: string }> {
+  await requireRole('ADMIN');
+  const result = adminService.updatePlanPaypalPrice(planId, priceMinor, currency);
+  if (!result.ok) return { error: result.error.message };
+  revalidatePath('/admin/premium');
+  revalidatePath('/premium');
+  revalidatePath('/premium/start');
+  return {};
+}
+
 export async function grantSubscriptionAction(userId: string, planId: string, days: number): Promise<{ error?: string }> {
   await requireRole('ADMIN');
   const result = adminService.grantSubscription(userId, planId, days);
