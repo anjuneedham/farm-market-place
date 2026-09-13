@@ -1,0 +1,163 @@
+# AgriLoop — User Flows
+
+Each flow lists the screens, the states that must exist (loading / empty / error / success), and
+the permission boundary. Flows marked **MVP** are implemented; flows marked **Architected** have
+data models and seams but no shipped UI.
+
+---
+
+## 1. Farmer onboarding → first listing *(MVP)*
+
+```
+/signup  ──► choose role: I'm a Farmer
+   │
+   ├─► Account step   name, email, password              (zod: signupSchema)
+   ├─► Farm step      farm name, parish, community        (zod: farmProfileSchema)
+   └─► Done ──► /dashboard/farmer
+                  │  "Your farm has no listings yet" empty state
+                  └─► /dashboard/farmer/listings/new
+                          product (catalogue or new) → price mode → quantity
+                          → location (defaults from farm) → photos → publish
+                          └─► /market/<category>/<slug>  (public, shareable)
+```
+
+**Success criterion (spec §60):** sign up → farm profile → add product → publish → receive
+inquiry → respond → post in community → read Academy. Each arrow above is a single tap on
+mobile; the farm's parish and community pre-fill the listing form so a farmer publishing their
+second listing types a title, a price and nothing else.
+
+**States.** Signup: field-level validation errors, duplicate-email error, submitting state.
+Listing form: image upload progress, per-field errors, draft save. Dashboard: skeleton, then
+either metrics or the first-listing empty state.
+
+**Permission boundary.** `/dashboard/farmer/**` requires `role === FARMER`. Listing mutations
+re-check `listing.sellerId === session.userId` server-side in the action, not only in the UI.
+
+## 2. Buyer discovery → contact *(MVP)*
+
+```
+/            ──► search box or "Explore the Market"
+/market      ──► category rail · filters (parish, price, availability, verified, wholesale)
+/market/vegetables/scotch-bonnet-pepper-green-valley
+             ──► price, quantity, farm, verification, reviews
+             ├─► Contact Seller ──► /messages/new?listing=…  (auth required)
+             │      quick actions: availability · price · wholesale quote · I'm interested
+             ├─► Save listing    (auth required)
+             ├─► View farm       ──► /farmers/green-valley-farm
+             └─► WhatsApp        (only rendered when the seller configured a number)
+```
+
+**Auth wall placement.** Browsing, searching, filtering, farm profiles, community reading and
+the whole Academy are open to logged-out visitors — this is the SEO and acquisition surface.
+The wall sits exactly at *contacting, saving, posting and transacting*. A logged-out user who
+taps "Contact Seller" is sent to `/signin?next=…` and returns to the same listing.
+
+## 3. Buyer request → farmer response *(MVP)*
+
+```
+Buyer:  /dashboard/buyer/requests/new
+          what · quantity + unit · frequency · budget (or "negotiable") · parish · needed by
+          └─► /requests/<slug>  (public)
+
+Farmer: /requests  (filter by parish + category)
+          └─► /requests/<slug> ──► Respond
+                 message + optional quoted price/quantity
+                 └─► creates RequestResponse + Conversation + Notification to the buyer
+```
+
+This is the demand-first inversion described in the architecture doc: it works with zero
+listings in the catalogue, which is why it is MVP and not phase two.
+
+**Constraint.** One response per farmer per request (`@@unique([buyerRequestId, responderId])`);
+a second attempt edits the first rather than spamming the buyer.
+
+## 4. Messaging *(MVP)*
+
+```
+/messages ──► conversation list (last message, unread count, context chip)
+/messages/<id> ──► thread
+     composer: text · image · quick actions
+     context header: the listing or buyer request this thread is about
+```
+
+Conversations are deduplicated on `(participantA, participantB, listing, buyerRequest)`, so
+messaging the same farmer about the same listing twice continues one thread.
+
+**Architected, not built:** email and push delivery. `NotificationService` already receives
+every event; only the in-app channel is implemented.
+
+## 5. Order and review *(MVP, off-platform payment)*
+
+```
+Negotiation happens in messages (or by phone/WhatsApp).
+Seller or buyer records the agreed deal:
+   /dashboard/<role>/orders/new  ──► Order(status REQUESTED, paymentStatus OFF_PLATFORM)
+   ──► CONFIRMED ──► PROCESSING ──► READY ──► COMPLETED
+                                                  │
+                                                  └─► both parties may review, once each
+```
+
+Reviews are gated on `COMPLETED`. There is no way to review a stranger you have not traded with
+— that is the anti-spam design, and it is enforced in `orders.ts` / `reviews.ts`, not in the UI.
+
+## 6. Community *(MVP)*
+
+```
+/community                    category grid + recent activity
+/community/<category>         post list (pinned first, then last activity)
+/community/<category>/<slug>  post · comments · replies · likes
+                              report · block author
+Posting requires auth; reading does not.
+```
+
+## 7. Academy *(MVP)*
+
+```
+/academy                      tracks
+/academy/<course>             course + lesson list, progress bar when signed in
+/academy/<course>/<lesson>    lesson body, mark complete, bookmark
+```
+
+Free lessons render in full for everyone including logged-out visitors. Premium lessons render
+their summary plus an explicit upgrade panel — never a blank page and never a bait-and-switch
+after the content has started.
+
+## 8. Premium *(MVP architecture, manual activation)*
+
+```
+/premium  ──► audience toggle (Farmer | Buyer) · benefits by category · plan prices from admin
+          ──► "Start Premium"
+                 │
+                 ├─ payments not configured ──► waitlist/interest state, honestly labelled
+                 └─ payments configured     ──► PaymentService.createCheckout()   (future)
+```
+
+The MVP never charges a card. The button says what actually happens.
+
+## 9. Admin *(MVP)*
+
+```
+/admin            platform metrics
+/admin/users      suspend · reinstate · change role
+/admin/verification  pending queue ──► approve/reject with note  ──► badge + notification
+/admin/listings   feature · remove · restore
+/admin/community  moderation queue from Report rows
+/admin/academy    publish/unpublish courses and lessons
+/admin/premium    edit plan prices and benefits   ← the only place prices are set
+/admin/locations  countries, regions, communities; toggle a market live
+/admin/categories category tree, product catalogue approvals
+```
+
+Every admin route is guarded by `requireRole('ADMIN')` in a layout *and* by a check inside each
+server action. A non-admin hitting an admin URL gets a 404, not a 403 — admin surface area is
+not advertised.
+
+## 10. Architected, not implemented
+
+| Flow | What exists today |
+| --- | --- |
+| AI assistant | `AIService` interface + a disabled UI panel explaining the status |
+| Crop calendar | Route + inputs modelled; refuses to output advice without a data source |
+| Market intelligence | Service returns `insufficient-data`; UI shows the threshold |
+| Online checkout | `PaymentService` interface, `Order`/`Transaction` models |
+| Referrals | `Referral` model + share URLs; no reward engine |

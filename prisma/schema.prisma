@@ -1,0 +1,1205 @@
+// AgriLoop — production database schema (PostgreSQL).
+// See docs/DATABASE_SCHEMA.md for the reasoning behind these models.
+//
+// Money is always stored as an integer of minor units (cents) plus an ISO 4217 code.
+// Never use Float/Decimal for prices.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Geography — country is configuration, not an enum. Adding a Caribbean market
+// is data entry, not a code change.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Country {
+  code           String   @id @db.VarChar(2) // ISO 3166-1 alpha-2, e.g. "JM"
+  name           String
+  currency       String   @db.VarChar(3) // ISO 4217 default, e.g. "JMD"
+  locale         String   @default("en-JM")
+  dialCode       String
+  flagEmoji      String
+  regionLabel    String   @default("Region") // "Parish" in Jamaica
+  communityLabel String   @default("Community")
+  isLive         Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  regions          Region[]
+  farms            FarmProfile[]
+  businesses       BusinessProfile[]
+  buyers           BuyerProfile[]
+  listings         Listing[]
+  buyerRequests    BuyerRequest[]
+  plans            SubscriptionPlan[]
+
+  @@index([isLive, sortOrder])
+}
+
+model Region {
+  id          String  @id @default(cuid())
+  countryCode String  @db.VarChar(2)
+  name        String
+  slug        String
+  latitude    Float?
+  longitude   Float?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  country     Country     @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+  communities Community[]
+
+  farms         FarmProfile[]
+  businesses    BusinessProfile[]
+  buyers        BuyerProfile[]
+  listings      Listing[]
+  buyerRequests BuyerRequest[]
+
+  @@unique([countryCode, slug])
+  @@index([countryCode, sortOrder])
+}
+
+model Community {
+  id       String  @id @default(cuid())
+  regionId String
+  name     String
+  slug     String
+  isActive Boolean @default(true)
+
+  region        Region            @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  farms         FarmProfile[]
+  businesses    BusinessProfile[]
+  listings      Listing[]
+  buyerRequests BuyerRequest[]
+
+  @@unique([regionId, slug])
+  @@index([regionId, name])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Identity
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  FARMER
+  BUYER
+  BUSINESS
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_DELETION
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  passwordHash  String
+  name          String
+  role          UserRole
+  status        UserStatus @default(ACTIVE)
+  avatarUrl     String?
+  phone         String?
+  whatsapp      String?
+  emailVerified DateTime?
+  lastSeenAt    DateTime?
+  isDemoData    Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  farmProfile     FarmProfile?
+  businessProfile BusinessProfile?
+  buyerProfile    BuyerProfile?
+
+  sessions          Session[]
+  passwordResets    PasswordReset[]
+  listings          Listing[]
+  buyerRequests     BuyerRequest[]
+  requestResponses  RequestResponse[]
+  ordersAsBuyer     Order[]           @relation("OrderBuyer")
+  ordersAsSeller    Order[]           @relation("OrderSeller")
+  reviewsWritten    Review[]          @relation("ReviewAuthor")
+  reviewsReceived   Review[]          @relation("ReviewSubject")
+  favorites         Favorite[]
+  shoppingLists     ShoppingList[]
+  conversationsA    Conversation[]    @relation("ConversationA")
+  conversationsB    Conversation[]    @relation("ConversationB")
+  messages          Message[]
+  posts             CommunityPost[]
+  comments          Comment[]
+  postLikes         PostLike[]
+  lessonProgress    LessonProgress[]
+  subscription      Subscription?
+  notifications     Notification[]
+  reportsFiled      Report[]          @relation("ReportReporter")
+  verifications     Verification[]    @relation("VerificationSubject")
+  verificationsDone Verification[]    @relation("VerificationReviewer")
+  blocksMade        UserBlock[]       @relation("BlockActor")
+  blocksReceived    UserBlock[]       @relation("BlockTarget")
+  referralsSent     Referral[]        @relation("ReferralInviter")
+  referralReceived  Referral?         @relation("ReferralInvitee")
+  analyticsEvents   AnalyticsEvent[]
+
+  @@index([role, status, createdAt])
+  @@index([status, lastSeenAt])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Profiles
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum FarmingMethod {
+  CONVENTIONAL
+  ORGANIC_PRACTICES
+  GREENHOUSE
+  HYDROPONIC
+  MIXED
+  PASTURE_RAISED
+}
+
+model FarmProfile {
+  id             String          @id @default(cuid())
+  userId         String          @unique
+  name           String
+  slug           String          @unique
+  tagline        String?
+  story          String?         @db.Text
+  countryCode    String          @db.VarChar(2)
+  regionId       String
+  communityId    String?
+  latitude       Float?
+  longitude      Float?
+  yearsFarming   Int?
+  farmSizeAcres  Float?
+  methods        FarmingMethod[]
+  specialties    String[]
+  coverImageUrl  String?
+  logoUrl        String?
+  galleryUrls    String[]
+  acceptsPickup  Boolean         @default(true)
+  acceptsDelivery Boolean        @default(false)
+  deliveryNotes  String?
+  isVerified     Boolean         @default(false)
+  verifiedAt     DateTime?
+  ratingAverage  Float           @default(0)
+  ratingCount    Int             @default(0)
+  followerCount  Int             @default(0)
+  isDemoData     Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country   Country    @relation(fields: [countryCode], references: [code])
+  region    Region     @relation(fields: [regionId], references: [id])
+  community Community? @relation(fields: [communityId], references: [id])
+
+  @@index([countryCode, regionId, isVerified])
+  @@index([countryCode, ratingAverage(sort: Desc)])
+}
+
+enum BusinessType {
+  INPUT_SUPPLIER
+  EQUIPMENT
+  SERVICES
+  TRANSPORT
+  CONSULTING
+  TECHNOLOGY
+  PROCESSING
+  OTHER
+}
+
+model BusinessProfile {
+  id            String       @id @default(cuid())
+  userId        String       @unique
+  name          String
+  slug          String       @unique
+  type          BusinessType
+  tagline       String?
+  description   String?      @db.Text
+  countryCode   String       @db.VarChar(2)
+  regionId      String
+  communityId   String?
+  latitude      Float?
+  longitude     Float?
+  website       String?
+  servicesOffered String[]
+  coverImageUrl String?
+  logoUrl       String?
+  isVerified    Boolean      @default(false)
+  verifiedAt    DateTime?
+  ratingAverage Float        @default(0)
+  ratingCount   Int          @default(0)
+  isDemoData    Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country   Country    @relation(fields: [countryCode], references: [code])
+  region    Region     @relation(fields: [regionId], references: [id])
+  community Community? @relation(fields: [communityId], references: [id])
+
+  @@index([countryCode, type, isVerified])
+}
+
+enum BuyerType {
+  HOUSEHOLD
+  RESTAURANT
+  HOTEL
+  SUPERMARKET
+  WHOLESALER
+  CATERER
+  FOOD_MANUFACTURER
+  INSTITUTION
+  EXPORTER
+  OTHER
+}
+
+model BuyerProfile {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  displayName   String
+  slug          String    @unique
+  type          BuyerType @default(HOUSEHOLD)
+  organisation  String?
+  description   String?   @db.Text
+  countryCode   String    @db.VarChar(2)
+  regionId      String
+  logoUrl       String?
+  isVerified    Boolean   @default(false)
+  verifiedAt    DateTime?
+  ratingAverage Float     @default(0)
+  ratingCount   Int       @default(0)
+  isDemoData    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country Country @relation(fields: [countryCode], references: [code])
+  region  Region  @relation(fields: [regionId], references: [id])
+
+  @@index([countryCode, type])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Catalogue
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(cuid())
+  parentId    String?
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  level       Int      @default(0)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+  listings Listing[]
+
+  @@index([parentId, sortOrder])
+  @@index([level, isActive, sortOrder])
+}
+
+enum ProductStatus {
+  ACTIVE
+  PENDING
+  REJECTED
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  categoryId  String
+  name        String
+  slug        String        @unique
+  synonyms    String[]
+  description String?       @db.Text
+  imageUrl    String?
+  defaultUnit String        @default("lb")
+  status      ProductStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+
+  category Category  @relation(fields: [categoryId], references: [id])
+  listings Listing[]
+
+  @@index([categoryId, status, name])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Listings
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  SOLD_OUT
+  ARCHIVED
+  REMOVED_BY_ADMIN
+}
+
+enum PricingMode {
+  FIXED
+  NEGOTIABLE
+  CONTACT_FOR_PRICE
+  WHOLESALE
+  BULK_TIERED
+}
+
+enum Availability {
+  IN_STOCK
+  LIMITED
+  PRE_ORDER
+  SEASONAL
+  OUT_OF_STOCK
+}
+
+model Listing {
+  id             String        @id @default(cuid())
+  sellerId       String
+  productId      String?
+  categoryId     String
+  title          String
+  slug           String        @unique
+  description    String        @db.Text
+  imageUrls      String[]
+  countryCode    String        @db.VarChar(2)
+  regionId       String
+  communityId    String?
+  latitude       Float?
+  longitude      Float?
+  pricingMode    PricingMode   @default(FIXED)
+  priceMinor     Int? // null when CONTACT_FOR_PRICE
+  currency       String        @db.VarChar(3)
+  unit           String        @default("lb")
+  quantity       Float?
+  minOrder       Float?
+  availability   Availability  @default(IN_STOCK)
+  availableFrom  DateTime?
+  availableUntil DateTime?
+  wholesaleAvailable Boolean   @default(false)
+  status         ListingStatus @default(ACTIVE)
+  featuredUntil  DateTime?
+  viewCount      Int           @default(0)
+  isDemoData     Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  seller    User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  product   Product?    @relation(fields: [productId], references: [id])
+  category  Category    @relation(fields: [categoryId], references: [id])
+  country   Country     @relation(fields: [countryCode], references: [code])
+  region    Region      @relation(fields: [regionId], references: [id])
+  community Community?  @relation(fields: [communityId], references: [id])
+  priceTiers PriceTier[]
+  orderItems OrderItem[]
+  favorites  Favorite[]
+  conversations Conversation[]
+  shoppingListItems ShoppingListItem[]
+
+  @@index([status, countryCode, categoryId, createdAt(sort: Desc)])
+  @@index([status, countryCode, regionId, createdAt(sort: Desc)])
+  @@index([sellerId, status, updatedAt(sort: Desc)])
+  @@index([productId, status, priceMinor])
+  @@index([status, featuredUntil(sort: Desc)])
+}
+
+model PriceTier {
+  id          String @id @default(cuid())
+  listingId   String
+  minQuantity Float
+  unitPrice   Int // minor units
+  label       String?
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, minQuantity])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demand side — buyer requests
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum RequestFrequency {
+  ONE_TIME
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  ONGOING
+}
+
+enum RequestStatus {
+  OPEN
+  FULFILLED
+  CLOSED
+  EXPIRED
+  REMOVED_BY_ADMIN
+}
+
+model BuyerRequest {
+  id            String           @id @default(cuid())
+  buyerId       String
+  categoryId    String?
+  title         String
+  slug          String           @unique
+  description   String           @db.Text
+  quantity      Float?
+  unit          String?
+  frequency     RequestFrequency @default(ONE_TIME)
+  budgetMinor   Int?
+  budgetIsNegotiable Boolean     @default(true)
+  currency      String           @db.VarChar(3)
+  countryCode   String           @db.VarChar(2)
+  regionId      String
+  communityId   String?
+  neededBy      DateTime?
+  status        RequestStatus    @default(OPEN)
+  responseCount Int              @default(0)
+  isDemoData    Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  buyer     User              @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  country   Country           @relation(fields: [countryCode], references: [code])
+  region    Region            @relation(fields: [regionId], references: [id])
+  community Community?        @relation(fields: [communityId], references: [id])
+  responses RequestResponse[]
+  conversations Conversation[]
+
+  @@index([status, countryCode, regionId, createdAt(sort: Desc)])
+  @@index([buyerId, status, createdAt(sort: Desc)])
+}
+
+model RequestResponse {
+  id             String   @id @default(cuid())
+  buyerRequestId String
+  responderId    String
+  message        String   @db.Text
+  quotedPriceMinor Int?
+  currency       String?  @db.VarChar(3)
+  quotedQuantity Float?
+  createdAt      DateTime @default(now())
+
+  buyerRequest BuyerRequest @relation(fields: [buyerRequestId], references: [id], onDelete: Cascade)
+  responder    User         @relation(fields: [responderId], references: [id], onDelete: Cascade)
+
+  @@unique([buyerRequestId, responderId])
+  @@index([buyerRequestId, createdAt(sort: Desc)])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Orders — present even though on-platform checkout is disabled in the MVP.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OrderStatus {
+  REQUESTED
+  CONFIRMED
+  PROCESSING
+  READY
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  OFF_PLATFORM
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum FulfilmentMethod {
+  PICKUP
+  DELIVERY
+  MEET_AT_MARKET
+}
+
+model Order {
+  id              String           @id @default(cuid())
+  reference       String           @unique
+  buyerId         String
+  sellerId        String
+  status          OrderStatus      @default(REQUESTED)
+  paymentStatus   PaymentStatus    @default(OFF_PLATFORM)
+  fulfilment      FulfilmentMethod @default(PICKUP)
+  currency        String           @db.VarChar(3)
+  subtotalMinor   Int
+  savedMinor      Int              @default(0) // Premium savings realised on this order
+  totalMinor      Int
+  notes           String?          @db.Text
+  scheduledFor    DateTime?
+  completedAt     DateTime?
+  cancelledReason String?
+  isDemoData      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  buyer        User          @relation("OrderBuyer", fields: [buyerId], references: [id])
+  seller       User          @relation("OrderSeller", fields: [sellerId], references: [id])
+  items        OrderItem[]
+  reviews      Review[]
+  transactions Transaction[]
+
+  @@index([buyerId, status, createdAt(sort: Desc)])
+  @@index([sellerId, status, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  listingId   String?
+  titleSnapshot String
+  unit        String
+  quantity    Float
+  unitPriceMinor Int
+  lineTotalMinor Int
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  listing Listing? @relation(fields: [listingId], references: [id])
+
+  @@index([orderId])
+  @@index([listingId])
+}
+
+model Transaction {
+  id             String   @id @default(cuid())
+  orderId        String
+  provider       String // "offline" in MVP
+  providerRef    String?
+  currency       String   @db.VarChar(3)
+  amountMinor    Int
+  platformFeeMinor Int    @default(0)
+  status         String
+  createdAt      DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trust
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Review {
+  id            String   @id @default(cuid())
+  orderId       String
+  authorId      String
+  subjectUserId String
+  rating        Int // 1..5, validated in the service layer
+  body          String?  @db.Text
+  isHidden      Boolean  @default(false)
+  isDemoData    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author  User  @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  subject User  @relation("ReviewSubject", fields: [subjectUserId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, authorId])
+  @@index([subjectUserId, isHidden, createdAt(sort: Desc)])
+}
+
+enum VerificationKind {
+  FARMER
+  BUSINESS
+  BUYER
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REVOKED
+}
+
+model Verification {
+  id         String             @id @default(cuid())
+  subjectId  String
+  kind       VerificationKind
+  status     VerificationStatus @default(PENDING)
+  reviewerId String?
+  note       String?            @db.Text
+  evidenceUrls String[]
+  requestedAt DateTime          @default(now())
+  decidedAt  DateTime?
+
+  subject  User  @relation("VerificationSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("VerificationReviewer", fields: [reviewerId], references: [id])
+
+  @@index([status, requestedAt])
+  @@index([subjectId, status])
+}
+
+enum ReportTargetType {
+  USER
+  LISTING
+  POST
+  COMMENT
+  REVIEW
+  BUYER_REQUEST
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  ACTIONED
+  DISMISSED
+}
+
+model Report {
+  id         String           @id @default(cuid())
+  reporterId String
+  targetType ReportTargetType
+  targetId   String
+  reason     String
+  details    String?          @db.Text
+  status     ReportStatus     @default(OPEN)
+  resolution String?
+  createdAt  DateTime         @default(now())
+  resolvedAt DateTime?
+
+  reporter User @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  actorId   String
+  targetId  String
+  createdAt DateTime @default(now())
+
+  actor  User @relation("BlockActor", fields: [actorId], references: [id], onDelete: Cascade)
+  target User @relation("BlockTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([actorId, targetId])
+  @@index([targetId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Messaging
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Conversation {
+  id             String   @id @default(cuid())
+  participantAId String // always the lexicographically smaller id
+  participantBId String
+  listingId      String?
+  buyerRequestId String?
+  lastMessageAt  DateTime @default(now())
+  lastMessagePreview String?
+  unreadForA     Int      @default(0)
+  unreadForB     Int      @default(0)
+  isDemoData     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  participantA User          @relation("ConversationA", fields: [participantAId], references: [id], onDelete: Cascade)
+  participantB User          @relation("ConversationB", fields: [participantBId], references: [id], onDelete: Cascade)
+  listing      Listing?      @relation(fields: [listingId], references: [id])
+  buyerRequest BuyerRequest? @relation(fields: [buyerRequestId], references: [id])
+  messages     Message[]
+
+  @@unique([participantAId, participantBId, listingId, buyerRequestId])
+  @@index([participantAId, lastMessageAt(sort: Desc)])
+  @@index([participantBId, lastMessageAt(sort: Desc)])
+}
+
+enum MessageKind {
+  TEXT
+  IMAGE
+  LISTING_REF
+  QUOTE
+  SYSTEM
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  senderId       String
+  kind           MessageKind @default(TEXT)
+  body           String      @db.Text
+  payload        Json?
+  readAt         DateTime?
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Saving and lists
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum FavoriteKind {
+  LISTING
+  FARM
+  BUSINESS
+  BUYER_REQUEST
+  POST
+}
+
+model Favorite {
+  id        String       @id @default(cuid())
+  userId    String
+  kind      FavoriteKind
+  targetId  String
+  listingId String?
+  createdAt DateTime     @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, targetId])
+  @@index([userId, kind, createdAt(sort: Desc)])
+}
+
+model ShoppingList {
+  id         String   @id @default(cuid())
+  ownerId    String
+  name       String
+  notes      String?
+  isDemoData Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  owner User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  items ShoppingListItem[]
+
+  @@index([ownerId, updatedAt(sort: Desc)])
+}
+
+model ShoppingListItem {
+  id        String  @id @default(cuid())
+  listId    String
+  label     String
+  quantity  Float?
+  unit      String?
+  listingId String?
+  sortOrder Int     @default(0)
+
+  list    ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listing Listing?     @relation(fields: [listingId], references: [id])
+
+  @@index([listId, sortOrder])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Community
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum PostStatus {
+  PUBLISHED
+  HIDDEN
+  REMOVED_BY_ADMIN
+}
+
+model CommunityCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  posts CommunityPost[]
+
+  @@index([isActive, sortOrder])
+}
+
+model CommunityPost {
+  id             String     @id @default(cuid())
+  categoryId     String
+  authorId       String
+  title          String
+  slug           String     @unique
+  body           String     @db.Text
+  imageUrls      String[]
+  tags           String[]
+  status         PostStatus @default(PUBLISHED)
+  isPinned       Boolean    @default(false)
+  commentCount   Int        @default(0)
+  likeCount      Int        @default(0)
+  lastActivityAt DateTime   @default(now())
+  isDemoData     Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  category CommunityCategory @relation(fields: [categoryId], references: [id])
+  author   User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likes    PostLike[]
+
+  @@index([categoryId, status, isPinned(sort: Desc), lastActivityAt(sort: Desc)])
+  @@index([status, lastActivityAt(sort: Desc)])
+  @@index([authorId, createdAt(sort: Desc)])
+}
+
+model Comment {
+  id        String     @id @default(cuid())
+  postId    String
+  authorId  String
+  parentId  String?
+  body      String     @db.Text
+  status    PostStatus @default(PUBLISHED)
+  isDemoData Boolean   @default(false)
+  createdAt DateTime   @default(now())
+
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  Comment?      @relation("CommentThread", fields: [parentId], references: [id])
+  replies Comment[]     @relation("CommentThread")
+
+  @@index([postId, status, createdAt])
+  @@index([parentId, createdAt])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Academy
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ContentAccess {
+  FREE
+  PREMIUM
+}
+
+enum LessonKind {
+  ARTICLE
+  VIDEO
+  GUIDE
+  DOWNLOAD
+}
+
+model AcademyTrack {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+
+  courses AcademyCourse[]
+
+  @@index([sortOrder])
+}
+
+model AcademyCourse {
+  id           String        @id @default(cuid())
+  trackId      String
+  title        String
+  slug         String        @unique
+  summary      String        @db.Text
+  coverImageUrl String?
+  access       ContentAccess @default(FREE)
+  level        String        @default("Beginner")
+  estimatedMinutes Int       @default(0)
+  countryCode  String?       @db.VarChar(2) // null = region-wide content
+  isPublished  Boolean       @default(true)
+  sortOrder    Int           @default(0)
+  isDemoData   Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  track   AcademyTrack @relation(fields: [trackId], references: [id])
+  lessons Lesson[]
+
+  @@index([trackId, isPublished, sortOrder])
+  @@index([access, isPublished])
+}
+
+model Lesson {
+  id         String        @id @default(cuid())
+  courseId   String
+  title      String
+  slug       String
+  kind       LessonKind    @default(ARTICLE)
+  access     ContentAccess @default(FREE)
+  body       String        @db.Text
+  mediaUrl   String?
+  resourceUrls String[]
+  minutes    Int           @default(5)
+  sortOrder  Int           @default(0)
+  isDemoData Boolean       @default(false)
+
+  course   AcademyCourse    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@unique([courseId, slug])
+  @@index([courseId, sortOrder])
+}
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completedAt DateTime?
+  bookmarked  Boolean   @default(false)
+  updatedAt   DateTime  @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Premium
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum PlanAudience {
+  FARMER
+  BUYER
+  BUSINESS
+  ALL
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+model SubscriptionPlan {
+  id          String          @id @default(cuid())
+  countryCode String          @db.VarChar(2)
+  name        String
+  slug        String
+  audience    PlanAudience    @default(ALL)
+  interval    BillingInterval @default(MONTHLY)
+  priceMinor  Int // ADMIN-EDITABLE. Never hardcode a price in application code.
+  currency    String          @db.VarChar(3)
+  trialDays   Int             @default(0)
+  isActive    Boolean         @default(true)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  country       Country          @relation(fields: [countryCode], references: [code])
+  subscriptions Subscription[]
+  benefits      PremiumBenefit[]
+
+  @@unique([countryCode, slug, interval])
+  @@index([countryCode, isActive, sortOrder])
+}
+
+enum BenefitCategory {
+  SAVE_MONEY
+  MAKE_MONEY
+  BETTER_ACCESS
+  EDUCATION
+  SUPPORT
+}
+
+model PremiumBenefit {
+  id          String          @id @default(cuid())
+  planId      String?
+  audience    PlanAudience    @default(ALL)
+  category    BenefitCategory
+  title       String
+  description String
+  featureKey  String // matched against PREMIUM_FEATURES in code
+  alwaysFree  Boolean         @default(false)
+  isActive    Boolean         @default(true)
+  sortOrder   Int             @default(0)
+
+  plan SubscriptionPlan? @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([audience, category, sortOrder])
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model Subscription {
+  id               String             @id @default(cuid())
+  userId           String             @unique
+  planId           String
+  status           SubscriptionStatus @default(ACTIVE)
+  startedAt        DateTime           @default(now())
+  currentPeriodEnd DateTime
+  cancelAtPeriodEnd Boolean           @default(false)
+  cancelledAt      DateTime?
+  provider         String             @default("manual")
+  providerRef      String?
+  isDemoData       Boolean            @default(false)
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([status, currentPeriodEnd])
+}
+
+enum DiscountKind {
+  PERCENT
+  FIXED
+}
+
+model Discount {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  label         String
+  kind          DiscountKind @default(PERCENT)
+  value         Int // percent (1..100) or minor units
+  currency      String?      @db.VarChar(3)
+  premiumOnly   Boolean      @default(true)
+  categoryId    String?
+  sellerId      String?
+  countryCode   String?      @db.VarChar(2)
+  maxRedemptions Int?
+  redemptions   Int          @default(0)
+  startsAt      DateTime     @default(now())
+  endsAt        DateTime?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notifications, growth, analytics
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum NotificationType {
+  MESSAGE
+  BUYER_REQUEST
+  REQUEST_RESPONSE
+  LISTING_ACTIVITY
+  ORDER
+  REVIEW
+  COMMUNITY_REPLY
+  ACADEMY_UPDATE
+  PREMIUM_DEAL
+  VERIFICATION
+  SUBSCRIPTION
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+}
+
+enum ReferralStatus {
+  PENDING
+  JOINED
+  QUALIFIED
+  REWARDED
+}
+
+model Referral {
+  id         String         @id @default(cuid())
+  inviterId  String
+  inviteeId  String?        @unique
+  code       String         @unique
+  inviteeRole UserRole?
+  status     ReferralStatus @default(PENDING)
+  rewardNote String?
+  createdAt  DateTime       @default(now())
+  joinedAt   DateTime?
+
+  inviter User  @relation("ReferralInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee User? @relation("ReferralInvitee", fields: [inviteeId], references: [id])
+
+  @@index([inviterId, status])
+}
+
+// Privacy-conscious by design: no IP, no user agent, no cross-site identifier.
+// userId is optional and omitted for anonymous traffic.
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  type        String
+  entityType  String?
+  entityId    String?
+  countryCode String?  @db.VarChar(2)
+  userId      String?
+  occurredAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, occurredAt])
+  @@index([entityType, entityId, occurredAt])
+}
+
+// Search terms are stored with no user linkage at all.
+model SearchQueryLog {
+  id          String   @id @default(cuid())
+  term        String
+  countryCode String?  @db.VarChar(2)
+  resultCount Int
+  occurredAt  DateTime @default(now())
+
+  @@index([term, occurredAt])
+}
