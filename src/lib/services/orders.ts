@@ -1,6 +1,7 @@
 import { db } from '@/lib/db/repositories';
 import { notificationService } from '@/lib/integrations';
 import { fail, ok, type ServiceResult } from '@/lib/integrations/types';
+import { canTransition } from '@/lib/order-transitions';
 import type { Order, OrderStatus, Review, User } from '@/lib/types';
 import type { z } from 'zod';
 import type { orderSchema, reviewSchema } from '@/lib/validation';
@@ -8,23 +9,7 @@ import type { orderSchema, reviewSchema } from '@/lib/validation';
 type OrderInput = z.infer<typeof orderSchema>;
 type ReviewInput = z.infer<typeof reviewSchema>;
 
-/**
- * Valid status transitions. Enforced here rather than in the database so the
- * rules are readable and testable (docs/DATABASE_SCHEMA.md §3.6).
- */
-const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  REQUESTED: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['PROCESSING', 'CANCELLED'],
-  PROCESSING: ['READY', 'CANCELLED', 'DISPUTED'],
-  READY: ['COMPLETED', 'CANCELLED', 'DISPUTED'],
-  COMPLETED: ['DISPUTED'],
-  CANCELLED: [],
-  DISPUTED: ['COMPLETED', 'CANCELLED'],
-};
-
-export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
-  return TRANSITIONS[from].includes(to);
-}
+export { canTransition };
 
 export const orderService = {
   forUser: db.orders.forUser.bind(db.orders),
