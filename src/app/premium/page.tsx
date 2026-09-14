@@ -53,6 +53,7 @@ export default async function PremiumPage({
   const benefits = premiumService.benefitsFor(audience).filter((b) => !b.alwaysFree);
   const alwaysFree = db.premium.benefits().filter((b) => b.alwaysFree);
   const isPremium = user ? premiumService.isPremium(user.id) : false;
+  const savingsExamples = audience === 'BUYER' ? premiumService.savingsExamplesFor(country.code) : [];
 
   const grouped = benefits.reduce<Record<string, typeof benefits>>((acc, benefit) => {
     (acc[benefit.category] ??= []).push(benefit);
@@ -81,6 +82,43 @@ export default async function PremiumPage({
         <div className="flex justify-center">
           <AudienceToggle current={audience} />
         </div>
+
+        {savingsExamples.length > 0 ? (
+          <section className="mt-10">
+            <h2 className="text-h2 mb-1">See the savings</h2>
+            <p className="mb-4 text-ink-600">
+              Real, currently-active Premium discounts, shown against a real listing at today&apos;s price.
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {savingsExamples.map(({ discount, listing, regularMinor, premiumMinor, saveMinor }) => (
+                <div key={discount.id} className="rounded-lg border border-line bg-surface p-5">
+                  <p className="text-sm font-medium text-ink-900">{discount.label}</p>
+                  <p className="mt-0.5 truncate text-xs text-ink-500">on {listing.title}</p>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-ink-500">Regular</dt>
+                      <dd className="tabular font-medium text-ink-700">
+                        {formatMoney(regularMinor, listing.currency)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-ink-500">Premium</dt>
+                      <dd className="tabular font-medium text-brand-700">
+                        {formatMoney(premiumMinor, listing.currency)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between border-t border-line pt-1.5">
+                      <dt className="font-semibold text-positive">You save</dt>
+                      <dd className="tabular font-bold text-positive">
+                        {formatMoney(saveMinor, listing.currency)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-8">

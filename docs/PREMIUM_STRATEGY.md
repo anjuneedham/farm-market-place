@@ -92,6 +92,12 @@ month-to-date and lifetime.
 rather than a demo number. Fabricating a savings figure would be the single fastest way to
 destroy the credibility Premium depends on.
 
+**Proof before purchase.** `/premium` (buyer audience) shows a "See the savings" panel built the
+same way: `premiumService.savingsExamplesFor()` takes each currently-active, Premium-only
+`Discount` row and applies it to a real listing's real current price in that category — Regular,
+Premium, You Save, exactly the worked example above. A discount with no matching priced listing
+in its category is skipped rather than shown against an invented price.
+
 ## 6. Conversion model
 
 Premium is sold at the moment of demonstrated need, not on a pricing page nobody visits:

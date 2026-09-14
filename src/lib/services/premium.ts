@@ -1,5 +1,21 @@
 import { db } from '@/lib/db/repositories';
-import type { PlanAudience, SubscriptionPlan, User } from '@/lib/types';
+import type { Discount, ListingView, PlanAudience, SubscriptionPlan, User } from '@/lib/types';
+
+export type SavingsExample = {
+  discount: Discount;
+  listing: ListingView;
+  regularMinor: number;
+  premiumMinor: number;
+  saveMinor: number;
+};
+
+function applyDiscount(priceMinor: number, discount: Discount): number {
+  const raw =
+    discount.kind === 'PERCENT'
+      ? priceMinor - Math.round((priceMinor * discount.value) / 100)
+      : priceMinor - discount.value;
+  return Math.max(0, Math.round(raw));
+}
 
 /**
  * Premium gating.
@@ -74,5 +90,37 @@ export const premiumService = {
    */
   savingsFor(userId: string) {
     return db.orders.savingsFor(userId);
+  },
+
+  /**
+   * Concrete "Regular / Premium / You Save" examples for `/premium`, built
+   * only from real, currently-active Premium-only `Discount` rows applied to
+   * a real listing that actually has a fixed price. A discount with no
+   * matching priced listing in its category is simply skipped — never
+   * rendered with an invented example price (docs/PREMIUM_STRATEGY.md §5).
+   */
+  savingsExamplesFor(countryCode: string, limit = 3): SavingsExample[] {
+    const discounts = db.premium.discounts(countryCode).filter((d) => d.premiumOnly);
+    const examples: SavingsExample[] = [];
+
+    for (const discount of discounts) {
+      if (examples.length >= limit) break;
+      const candidates = discount.categoryId
+        ? db.listings.search({ countryCode, categoryId: discount.categoryId, sort: 'popular', perPage: 10 }).items
+        : [];
+      const listing = candidates.find((l) => l.priceMinor !== undefined);
+      if (!listing?.priceMinor) continue;
+
+      const premiumMinor = applyDiscount(listing.priceMinor, discount);
+      examples.push({
+        discount,
+        listing,
+        regularMinor: listing.priceMinor,
+        premiumMinor,
+        saveMinor: listing.priceMinor - premiumMinor,
+      });
+    }
+
+    return examples;
   },
 };
