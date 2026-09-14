@@ -12,6 +12,7 @@ import { Rating } from '@/components/ui/Rating';
 import { ProduceSwatch } from '@/components/ui/Avatar';
 import { ListingCardGrid } from '@/components/marketplace/ListingCard';
 import { SaveButton } from '@/components/marketplace/SaveButton';
+import { ShareButton } from '@/components/marketplace/ShareButton';
 import { ContactSellerPanel } from '@/components/marketplace/ContactSellerPanel';
 import { ReportButton } from '@/components/marketplace/ReportButton';
 import { humanise, timeAgo } from '@/lib/utils';
@@ -102,7 +103,10 @@ export default async function ListingDetailPage({
                 {timeAgo(listing.createdAt)}
               </div>
             </div>
-            <SaveButton listingId={listing.id} initiallySaved={savedInitially} signedIn={Boolean(user)} />
+            <div className="flex gap-2">
+              <ShareButton title={listing.title} />
+              <SaveButton listingId={listing.id} initiallySaved={savedInitially} signedIn={Boolean(user)} />
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
