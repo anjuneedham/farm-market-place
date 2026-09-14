@@ -33,16 +33,26 @@ either metrics or the first-listing empty state.
 **Permission boundary.** `/dashboard/farmer/**` requires `role === FARMER`. Listing mutations
 re-check `listing.sellerId === session.userId` server-side in the action, not only in the UI.
 
+**V2 addition — mobile "+ Sell" entry point.** A floating action button, visible on mobile on
+every non-admin page, links straight to `/dashboard/farmer/listings/new`. It does not change the
+flow above — `requireRole` on that page still handles a buyer or signed-out visitor landing there
+— it just removes "I have to already be in the dashboard to find this" as a barrier.
+
 ## 2. Buyer discovery → contact *(MVP)*
 
 ```
 /            ──► search box or "Explore the Market"
-/market      ──► category rail · filters (parish, price, availability, verified, wholesale)
+/market      ──► with no filter active: curated homepage sections (Fresh Today, Popular
+                  Products, Wholesale Opportunities, Featured Farmers, Products Near You,
+                  Buyer Requests, Recently Added) — real queries, not fabricated content
+             ──► once a filter/search/sort is applied: category rail · filters (parish, price,
+                  availability, verified, wholesale) · the original paginated grid
 /market/vegetables/scotch-bonnet-pepper-green-valley
              ──► price, quantity, farm, verification, reviews
              ├─► Contact Seller ──► /messages/new?listing=…  (auth required)
              │      quick actions: availability · price · wholesale quote · I'm interested
              ├─► Save listing    (auth required)
+             ├─► Share           (Web Share API, or copy-link fallback)
              ├─► View farm       ──► /farmers/green-valley-farm
              └─► WhatsApp        (only rendered when the seller configured a number)
 ```
@@ -51,6 +61,11 @@ re-check `listing.sellerId === session.userId` server-side in the action, not on
 the whole Academy are open to logged-out visitors — this is the SEO and acquisition surface.
 The wall sits exactly at *contacting, saving, posting and transacting*. A logged-out user who
 taps "Contact Seller" is sent to `/signin?next=…` and returns to the same listing.
+
+**V2 addition — Near You.** `/near-you` resolves a visitor's parish (browser geolocation matched
+to the nearest parish centroid, or a manual choice) and sorts real farmers, businesses and
+listings by parish-to-parish distance from there. It reuses the same repository queries and
+existing parish centroid data — no geocoding service.
 
 ## 3. Buyer request → farmer response *(MVP)*
 
@@ -70,6 +85,12 @@ listings in the catalogue, which is why it is MVP and not phase two.
 
 **Constraint.** One response per farmer per request (`@@unique([buyerRequestId, responderId])`);
 a second attempt edits the first rather than spamming the buyer.
+
+**V2 addition — accept/reject.** The buyer can Accept or Decline each response from
+`/requests/<slug>`; the responder sees the outcome on their own quote. Declining does not lock a
+farmer out — revising and resending resets the response to `PENDING`. Accepting is "let's
+proceed," not a payment or a binding order; the flow after that point is unchanged (arrange
+payment off-platform, then record the `Order`).
 
 ## 4. Messaging *(MVP)*
 
@@ -110,6 +131,12 @@ Reviews are gated on `COMPLETED`. There is no way to review a stranger you have 
 Posting requires auth; reading does not.
 ```
 
+**V2 addition — optional marketplace link.** When posting, an author may paste the slug of a
+real listing, farm, business or buyer request to attach it; the server resolves and validates the
+slug before saving. The post page renders it as a single "Related on AgriLoop" card — never a
+feed of suggestions, so Community stays a place for real questions rather than an advertising
+surface.
+
 ## 7. Academy *(MVP)*
 
 ```
@@ -122,17 +149,26 @@ Free lessons render in full for everyone including logged-out visitors. Premium 
 their summary plus an explicit upgrade panel — never a blank page and never a bait-and-switch
 after the content has started.
 
-## 8. Premium *(MVP architecture, manual activation)*
+**V2 addition — Related on AgriLoop.** A course may carry a `relatedCategoryId` pointing at the
+marketplace category it most directly teaches (seeded for five real courses against categories
+that already exist — nothing fabricated); the same "Related on AgriLoop" card renders on both the
+course page and its lessons.
+
+## 8. Premium *(MVP, real checkout for one flow)*
 
 ```
-/premium  ──► audience toggle (Farmer | Buyer) · benefits by category · plan prices from admin
-          ──► "Start Premium"
+/premium  ──► audience toggle (Farmer | Buyer | Business) · benefits by category
+          ──► buyer audience: "See the savings" — real Regular/Premium/You-Save
+              examples from active Discount rows applied to a real listing's real price
+          ──► "Start Premium" / "Join AgriLoop"
                  │
-                 ├─ payments not configured ──► waitlist/interest state, honestly labelled
-                 └─ payments configured     ──► PaymentService.createCheckout()   (future)
+                 ├─ no PayPal price set for this plan ──► "not available yet", honestly labelled
+                 └─ PayPal price set                  ──► /premium/start?plan=…
+                                                             PayPal Express Checkout
 ```
 
-The MVP never charges a card. The button says what actually happens.
+Premium checkout is real — see docs/PREMIUM_STRATEGY.md §7. Every other AgriLoop transaction
+(a buyer paying a seller) stays off-platform; the button never claims otherwise.
 
 ## 9. Admin *(MVP)*
 
@@ -159,5 +195,5 @@ not advertised.
 | AI assistant | `AIService` interface + a disabled UI panel explaining the status |
 | Crop calendar | Route + inputs modelled; refuses to output advice without a data source |
 | Market intelligence | Service returns `insufficient-data`; UI shows the threshold |
-| Online checkout | `PaymentService` interface, `Order`/`Transaction` models |
+| Marketplace escrow/on-platform payment | `Order`/`Transaction` models exist; buyer-seller payment stays off-platform. (Premium subscription checkout itself is real — PayPal Express Checkout, docs/PREMIUM_STRATEGY.md §7 — this row is specifically about paying a seller through AgriLoop.) |
 | Referrals | `Referral` model + share URLs; no reward engine |

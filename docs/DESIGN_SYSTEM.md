@@ -120,7 +120,9 @@ Max content width `1280px`; long-form reading width `72ch`.
 `EmptyState`, `ErrorState`, `Stat`, `ProgressBar`, `Rating`, `FeatureStatus`.
 
 **Patterns:** `ProductCard`, `FarmerCard`, `BusinessCard`, `BuyerRequestCard`, `PostCard`,
-`LessonCard`, `FilterPanel`, `DashboardShell`, `AdminTable`, `SectionHeader`, `Money`.
+`LessonCard`, `FilterPanel`, `DashboardShell`, `AdminTable`, `SectionHeader`, `Money`,
+`RelatedOnAgriLoop` (V2 — the one Community/Academy ↔ Marketplace link card, always a single
+result, never a feed).
 
 **Button variants:** `primary` (brand-600), `secondary` (outline), `ghost`, `accent`,
 `premium` (gold), `danger`. Sizes `sm | md | lg`; `md` is 44px tall — the minimum touch target —
@@ -140,6 +142,10 @@ search · notifications · account.
 
 Secondary destinations (Businesses, Map, Messages, dashboards) are reached from context and
 from the account menu — the top-level nav is not allowed to grow.
+
+**Mobile "+ Sell" FAB (V2).** A floating action button, visible on mobile only, sits above the
+bottom nav rather than inside it — the five-item rule above is fixed and does not flex to
+accommodate a sixth destination. It links straight to the existing listing form.
 
 ## 8. Empty states
 

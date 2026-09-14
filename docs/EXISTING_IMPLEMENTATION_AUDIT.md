@@ -4,6 +4,11 @@ Written before the V2 upgrade, per the preservation rule: **inspect first, don't
 Every number and claim below was verified against the actual repository on this branch
 (`claude/agriloop-product-architecture-aewx3l`, commit `9c4bff5`) — not recalled from memory.
 
+> **Status: all 10 gaps in §6 closed.** The upgrade this document scoped is complete — see the
+> commit history on this branch (Phases 2–9) for what changed and how each change was verified.
+> This document is kept as-written below for the historical record of what the repository looked
+> like *before* that work; it is not maintained as living documentation of the current state.
+
 ---
 
 ## 1. Stack (confirmed)

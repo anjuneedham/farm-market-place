@@ -156,6 +156,7 @@ per-instance) behind an interface a Redis implementation can satisfy.
 | Create post / comment | 20 / hour |
 | Report | 10 / hour |
 | Search (anonymous) | 120 / min |
+| Create farm update (V2) | 10 / hour |
 
 ## 9. Errors
 

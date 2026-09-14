@@ -50,6 +50,13 @@ Three rules that are never relaxed:
 3. **Admin routes 404 for non-admins.** Admin surface area is not advertised to attackers, and
    `/admin/**` is additionally gated in `middleware.ts` before any page code runs.
 
+**V2 additions, same pattern.** Accepting/rejecting a buyer-request response re-checks
+`request.buyerId === session.user.id` server-side — the responder cannot decide on their own
+offer, and no other buyer can decide on a request that isn't theirs. Posting a Farm Update
+re-checks both that the session user owns a `FarmProfile` and, when a listing is linked, that the
+listing's `sellerId` matches the session user — never trusted from the submitted id. Blocking a
+user rejects the case where the target is the acting user themselves.
+
 ## 3. Input validation
 
 zod schemas in `src/lib/validation` are the single definition of every input shape, used by both

@@ -25,6 +25,27 @@ Phases follow the sequence in the product brief. Status reflects the current rep
 | 15 | Performance | ✅ | Server components, pagination, `next/image`, lazy media |
 | 16 | Deployment prep | ✅ | `.env.example`, build passes, data-source swap documented |
 
+## V2 upgrade (post-MVP, shipped on `claude/agriloop-product-architecture-aewx3l`)
+
+Every gap identified in `docs/EXISTING_IMPLEMENTATION_AUDIT.md` §6, closed without a rewrite —
+the existing repository layer, service contract, design system and location architecture were
+all preserved and built on, not replaced:
+
+| Gap | Status | Notes |
+| --- | --- | --- |
+| Marketplace homepage sections | ✅ | Fresh Today, Popular, Wholesale, Featured Farmers, Near You, Buyer Requests, Recently Added — filtered grid unchanged as the fallback view |
+| Inline card actions | ✅ | Save (heart overlay) + Contact/Request Wholesale Quote on every listing card |
+| Listing detail Share action | ✅ | Web Share API, copy-link fallback |
+| Quote accept/reject | ✅ | `RequestResponse.status`, buyer-only server-side authorization |
+| Farm Updates | ✅ | New model/repo/service/UI, owner-only composer, ownership-checked listing links |
+| Report/Block UI on farm & business profiles | ✅ | Reused existing `ReportButton` + `db.moderation`, added `BlockButton` |
+| Community ↔ Marketplace / Academy ↔ Marketplace linking | ✅ | One reusable `RelatedOnAgriLoop` component, never a feed |
+| Near You | ✅ | Geolocation-or-manual parish entry, existing centroid data, no geocoding service |
+| Mobile "+ Sell" entry point | ✅ | Floating action button; bottom nav's fixed five-item rule preserved |
+| Premium Regular/Premium/You-Save comparison | ✅ | Real `Discount` rows applied to real listing prices, never fabricated |
+| Natural-language search parsing | ✅ | `parseMarketQuery()` extracts wholesale/verified/parish from free text before falling back to the existing token search |
+| Three dead links (`/notifications`, `/guidelines`, `/about`) | ✅ | Real notifications page (reusing the existing repository), genuine guidelines and about pages |
+
 ## Immediately next (post-MVP, in order)
 
 1. **Prisma data source.** Implement `PrismaDataSource` against the repository interfaces and

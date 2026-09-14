@@ -152,7 +152,23 @@ does not create a second thread with the same person. `Message` supports `text`,
 with `status`, `currentPeriodEnd`, `cancelAtPeriodEnd`). `PremiumBenefit` rows describe what a
 plan unlocks and carry an `alwaysFree` flag used to guarantee core Community/Academy access.
 
-### 3.9 Analytics and privacy
+### 3.9 V2 additions: FarmUpdate, response status, loose related-content references
+
+Four additive, non-destructive schema changes from the V2 upgrade:
+
+- **`FarmUpdate`** — a short storefront post belonging to one `FarmProfile`, optionally pointing
+  at one of that farm's own `Listing`s or a `BuyerRequest`. New model, new table; nothing existing
+  changed shape.
+- **`RequestResponse.status`** (`RequestResponseStatus`: `PENDING` → `ACCEPTED`/`REJECTED`, plus
+  `decidedAt`) — lets a buyer accept or reject a farmer's quote. Defaults to `PENDING`, so no
+  existing row needs a migration decision.
+- **`CommunityPost.relatedType`/`relatedId`** (`RelatedRefType`) — a loose, unenforced reference
+  to a listing, farm, business or buyer request, the same pattern as `Report.targetType`/
+  `targetId`. No foreign key on purpose: a citation, not a relation the schema needs to protect.
+- **`AcademyCourse.relatedCategoryId`** — a real foreign key to `Category`, since a course
+  belongs to exactly one syllabus and pointing at a stable catalogue category is safe to enforce.
+
+### 3.10 Analytics and privacy
 
 `AnalyticsEvent` stores `type`, `entityType`, `entityId`, a coarse `countryCode`, a bucketed
 timestamp and an **optional** `userId`. No IP addresses, no user agents, no cross-site

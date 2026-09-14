@@ -15,6 +15,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { CardLink, SectionHeader } from '@/components/ui/Card';
 import { Money } from '@/components/ui/Money';
 import { humanise, timeAgo } from '@/lib/utils';
+import { parseMarketQuery } from '@/lib/search/parseQuery';
 import type { ListingFilters } from '@/lib/db/repositories';
 
 export const metadata: Metadata = {
@@ -80,13 +81,18 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
     : undefined;
 
   if (hasActiveFilter) {
+    // A free-text query can carry its own structure ("wholesale pepper
+    // Manchester") — parsed terms only fill in filters the URL didn't
+    // already set explicitly, so the FilterBar's own selections always win.
+    const parsed = params.q ? parseMarketQuery(params.q, regions) : undefined;
+
     const filters: ListingFilters = {
       countryCode: country.code,
       categoryId: category?.id,
-      regionId: region?.id,
-      search: params.q,
-      wholesaleOnly: params.wholesale === 'true',
-      verifiedOnly: params.verified === 'true',
+      regionId: region?.id ?? parsed?.regionId,
+      search: parsed?.search || params.q,
+      wholesaleOnly: params.wholesale === 'true' || parsed?.wholesaleOnly,
+      verifiedOnly: params.verified === 'true' || parsed?.verifiedOnly,
       sort: (params.sort as ListingFilters['sort']) ?? 'recent',
       page: params.page ? Number(params.page) : 1,
     };
@@ -94,6 +100,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
     const results = marketplaceService.search(filters);
     marketplaceService.logSearch(params.q ?? '', results, country.code);
     const totalPages = Math.max(1, Math.ceil(results.total / results.perPage));
+    const matchedRegion = region ?? (parsed?.regionId ? db.locations.region(parsed.regionId) : undefined);
 
     return (
       <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
@@ -102,7 +109,8 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
           <p className="mt-1 text-ink-600">
             {results.total} listing{results.total === 1 ? '' : 's'}
             {category ? ` in ${category.name}` : ''}
-            {region ? ` · ${region.name}` : ''}
+            {matchedRegion ? ` · ${matchedRegion.name}` : ''}
+            {parsed?.wholesaleOnly ? ' · wholesale' : ''}
           </p>
         </div>
 
