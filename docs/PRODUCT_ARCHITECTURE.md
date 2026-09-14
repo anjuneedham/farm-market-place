@@ -151,6 +151,13 @@ its `currency`, its `locale`, its dial code and its `isLive` flag. Adding Barbad
 `countries.ts` plus its regions — no component changes. See
 `src/lib/location/` and [§21 of the roadmap](./MVP_ROADMAP.md).
 
+**Near You** (`/near-you`) reuses this same parish-centroid data — no geocoding service, no new
+dependency. A visitor either grants browser geolocation (matched client-side to the nearest parish
+centroid by great-circle distance) or picks a parish manually; the result page then sorts existing
+farmers, businesses and listings by parish-to-parish distance from that origin
+(`sortByRegionProximity()`), same parish first. It is deliberately parish-level, not
+address-level — that is the precision the data actually has.
+
 **Currency is never implicit.** Every price-bearing record stores an ISO 4217 `currency` code
 alongside a minor-unit integer amount. There is no cross-currency conversion in the MVP and no
 fake exchange rate; a listing in JMD renders as JMD everywhere. `formatMoney()` is the single

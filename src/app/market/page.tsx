@@ -242,24 +242,20 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         eyebrow="Close to home"
         title="Products near you"
         description={nearYouRegionName ? `Recently listed in ${nearYouRegionName}.` : undefined}
+        viewAllHref="/near-you"
+        viewAllLabel="Open Near You"
       >
         {nearYou.length > 0 ? (
           <ListingCardGrid listings={nearYou} signedIn={Boolean(user)} savedIds={savedListingIds} />
         ) : (
           <EmptyState
-            title={user ? 'Nothing new in your parish yet.' : 'Sign in to see what’s growing near you.'}
+            title={user ? 'Nothing new in your parish yet.' : 'See what’s near any parish.'}
             description={
               user
-                ? 'Check back soon, or browse other parishes from the filters above.'
-                : 'AgriLoop personalises this section from your farm, business or buyer profile location.'
+                ? 'Check back soon, or explore other parishes with Near You.'
+                : 'AgriLoop personalises this section from your farm, business or buyer profile location — or use Near You to browse any parish directly.'
             }
-            action={
-              user ? (
-                <ButtonLink href="/market" variant="secondary">Browse all parishes</ButtonLink>
-              ) : (
-                <ButtonLink href="/signin?next=/market">Sign In</ButtonLink>
-              )
-            }
+            action={<ButtonLink href="/near-you" variant="secondary">Open Near You</ButtonLink>}
           />
         )}
       </MarketSection>
