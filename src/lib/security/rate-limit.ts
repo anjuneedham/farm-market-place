@@ -12,6 +12,7 @@ export const RATE_LIMITS = {
   signUp: { limit: 5, windowMs: 60 * 60_000 },
   passwordReset: { limit: 5, windowMs: 60 * 60_000 },
   createListing: { limit: 20, windowMs: 60 * 60_000 },
+  createFarmUpdate: { limit: 10, windowMs: 60 * 60_000 },
   sendMessage: { limit: 60, windowMs: 60 * 60_000 },
   createPost: { limit: 20, windowMs: 60 * 60_000 },
   report: { limit: 10, windowMs: 60 * 60_000 },

@@ -14,6 +14,7 @@ import type {
   Country,
   Discount,
   FarmProfile,
+  FarmUpdate,
   Favorite,
   Lesson,
   LessonProgress,
@@ -57,6 +58,7 @@ export type DataSet = {
   users: User[];
   sessions: SessionRecord[];
   farms: FarmProfile[];
+  farmUpdates: FarmUpdate[];
   businesses: BusinessProfile[];
   buyers: BuyerProfile[];
 
@@ -111,6 +113,7 @@ export function emptyDataSet(): DataSet {
     users: [],
     sessions: [],
     farms: [],
+    farmUpdates: [],
     businesses: [],
     buyers: [],
     categories: [],

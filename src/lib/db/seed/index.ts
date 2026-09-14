@@ -4,6 +4,7 @@ import { seedAcademy } from './academy';
 import { seedActivity } from './activity';
 import { seedCategories, seedProducts } from './catalog';
 import { seedCommunity } from './community';
+import { seedFarmUpdates } from './farmUpdates';
 import { seedListings } from './listings';
 import { seedPeople } from './people';
 import { seedBenefits, seedDiscounts, seedPlans } from './premium';
@@ -44,6 +45,7 @@ export function buildSeedDataSet(): DataSet {
   const { listings, priceTiers } = seedListings();
   data.listings = listings;
   data.priceTiers = priceTiers;
+  data.farmUpdates = seedFarmUpdates(data.farms, listings);
 
   const { buyerRequests, requestResponses } = seedBuyerRequests();
   data.buyerRequests = buyerRequests;

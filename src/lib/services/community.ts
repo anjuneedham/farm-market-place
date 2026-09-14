@@ -120,4 +120,13 @@ export const communityService = {
     db.moderation.block(user.id, targetId);
     return ok(null);
   },
+
+  unblock(user: User, targetId: string): ServiceResult<null> {
+    db.moderation.unblock(user.id, targetId);
+    return ok(null);
+  },
+
+  isBlockedByViewer(user: User, targetId: string): boolean {
+    return db.moderation.blocks(user.id).some((b) => b.targetId === targetId);
+  },
 };

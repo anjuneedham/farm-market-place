@@ -1,6 +1,7 @@
 import { academy } from './academy';
 import { catalog } from './catalog';
 import { community } from './community';
+import { farmUpdates } from './farmUpdates';
 import { listings } from './listings';
 import { locations } from './locations';
 import { premium } from './premium';
@@ -33,6 +34,7 @@ export const db = {
   profiles,
   catalog,
   listings,
+  farmUpdates,
   buyerRequests,
   orders,
   reviews,

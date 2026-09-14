@@ -17,6 +17,7 @@ export type Action =
   | 'request:respond'
   | 'post:create'
   | 'post:update'
+  | 'farmUpdate:create'
   | 'comment:create'
   | 'message:send'
   | 'review:write'
@@ -65,6 +66,10 @@ export function can(user: User | null | undefined, action: Action, subject?: Sub
     case 'request:respond':
       // Sellers respond to demand; a buyer cannot quote on another buyer's request.
       return canSell(user);
+
+    case 'farmUpdate:create':
+      // A storefront update comes from the farm itself, not a business supplier.
+      return user.role === 'FARMER';
 
     case 'post:create':
     case 'comment:create':

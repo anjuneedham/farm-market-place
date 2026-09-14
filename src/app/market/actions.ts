@@ -44,6 +44,23 @@ export async function contactSellerAction(_prev: FormState, formData: FormData):
 
 export { QUICK_MESSAGES };
 
+export async function toggleBlockAction(
+  targetUserId: string,
+): Promise<{ blocked: boolean } | { error: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { error: 'Sign in to block a user.' };
+
+  if (communityService.isBlockedByViewer(user, targetUserId)) {
+    const result = communityService.unblock(user, targetUserId);
+    if (!result.ok) return { error: result.error.message };
+    return { blocked: false };
+  }
+
+  const result = communityService.block(user, targetUserId);
+  if (!result.ok) return { error: result.error.message };
+  return { blocked: true };
+}
+
 export async function reportContentAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await requireSession();
 

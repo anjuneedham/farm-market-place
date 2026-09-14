@@ -3,10 +3,13 @@ import { notFound } from 'next/navigation';
 import { MapPin, Building2 } from 'lucide-react';
 import { db } from '@/lib/db/repositories';
 import { getCurrentUser } from '@/lib/auth/session';
+import { communityService } from '@/lib/services/community';
 import { ListingCardGrid } from '@/components/marketplace/ListingCard';
 import { VerifiedBadge } from '@/components/ui/Badge';
 import { Rating } from '@/components/ui/Rating';
 import { ButtonLink } from '@/components/ui/Button';
+import { ReportButton } from '@/components/marketplace/ReportButton';
+import { BlockButton } from '@/components/marketplace/BlockButton';
 import { ReviewList } from '@/components/marketplace/ReviewList';
 import { EmptyState } from '@/components/ui/States';
 import { humanise } from '@/lib/utils';
@@ -42,6 +45,7 @@ export default async function BusinessProfilePage({
     ? new Set(db.favorites.forUser(user.id, 'LISTING').map((f) => f.targetId))
     : undefined;
   const isOwner = user?.id === business.userId;
+  const isBlocked = user ? communityService.isBlockedByViewer(user, business.userId) : false;
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6">
@@ -98,8 +102,8 @@ export default async function BusinessProfilePage({
           </section>
         </div>
 
-        {business.servicesOffered.length > 0 ? (
-          <aside>
+        <aside className="space-y-5">
+          {business.servicesOffered.length > 0 ? (
             <div className="rounded-lg border border-line bg-surface p-5">
               <h3 className="text-micro mb-3 text-ink-500">Services offered</h3>
               <ul className="space-y-1.5 text-sm text-ink-700">
@@ -108,8 +112,15 @@ export default async function BusinessProfilePage({
                 ))}
               </ul>
             </div>
-          </aside>
-        ) : null}
+          ) : null}
+
+          {!isOwner ? (
+            <div className="flex items-center justify-end gap-4">
+              <ReportButton targetType="USER" targetId={business.userId} signedIn={Boolean(user)} />
+              <BlockButton targetUserId={business.userId} initiallyBlocked={isBlocked} signedIn={Boolean(user)} />
+            </div>
+          ) : null}
+        </aside>
       </div>
     </div>
   );

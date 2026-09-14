@@ -3,13 +3,18 @@ import { notFound } from 'next/navigation';
 import { MapPin, Sprout } from 'lucide-react';
 import { db } from '@/lib/db/repositories';
 import { getCurrentUser } from '@/lib/auth/session';
+import { communityService } from '@/lib/services/community';
 import { ListingCardGrid } from '@/components/marketplace/ListingCard';
 import { PremiumBadge, VerifiedBadge } from '@/components/ui/Badge';
 import { Rating } from '@/components/ui/Rating';
 import { ProduceSwatch } from '@/components/ui/Avatar';
 import { ButtonLink } from '@/components/ui/Button';
 import { SaveButton } from '@/components/marketplace/SaveButton';
+import { ReportButton } from '@/components/marketplace/ReportButton';
+import { BlockButton } from '@/components/marketplace/BlockButton';
 import { ReviewList } from '@/components/marketplace/ReviewList';
+import { FarmUpdatesFeed } from '@/components/marketplace/FarmUpdatesFeed';
+import { FarmUpdateComposer } from '@/components/marketplace/FarmUpdateComposer';
 import { EmptyState } from '@/components/ui/States';
 import { humanise } from '@/lib/utils';
 
@@ -46,6 +51,7 @@ export default async function FarmerProfilePage({
   const region = db.locations.region(farm.regionId);
   const community = farm.communityId ? db.locations.community(farm.communityId) : undefined;
   const listings = db.listings.search({ sellerId: farm.userId, perPage: 12 }).items;
+  const updates = db.farmUpdates.forFarm(farm.id, 5);
   const reviews = db.reviews.forSubject(farm.userId, { perPage: 10 });
   const isPremium = db.premium.isPremium(farm.userId);
   const savedInitially = user ? db.favorites.has(user.id, 'FARM', farm.id) : false;
@@ -53,6 +59,7 @@ export default async function FarmerProfilePage({
     ? new Set(db.favorites.forUser(user.id, 'LISTING').map((f) => f.targetId))
     : undefined;
   const isOwner = user?.id === farm.userId;
+  const isBlocked = user ? communityService.isBlockedByViewer(user, farm.userId) : false;
 
   return (
     <div>
@@ -105,6 +112,23 @@ export default async function FarmerProfilePage({
 
         <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
           <div className="space-y-10">
+            <section>
+              <h2 className="text-h2 mb-4">Farm Updates</h2>
+              {isOwner ? (
+                <div className="mb-4">
+                  <FarmUpdateComposer listings={listings.map((l) => ({ id: l.id, title: l.title }))} />
+                </div>
+              ) : null}
+              {updates.length > 0 ? (
+                <FarmUpdatesFeed updates={updates} />
+              ) : !isOwner ? (
+                <EmptyState
+                  title="No updates yet."
+                  description={`${farm.name} hasn't posted a storefront update yet — check back soon.`}
+                />
+              ) : null}
+            </section>
+
             {farm.story ? (
               <section>
                 <h2 className="text-h2 mb-3">Our story</h2>
@@ -177,6 +201,13 @@ export default async function FarmerProfilePage({
                     </span>
                   ))}
                 </div>
+              </div>
+            ) : null}
+
+            {!isOwner ? (
+              <div className="flex items-center justify-end gap-4">
+                <ReportButton targetType="USER" targetId={farm.userId} signedIn={Boolean(user)} />
+                <BlockButton targetUserId={farm.userId} initiallyBlocked={isBlocked} signedIn={Boolean(user)} />
               </div>
             ) : null}
           </aside>

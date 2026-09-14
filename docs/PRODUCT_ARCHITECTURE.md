@@ -176,6 +176,15 @@ Pricing modes are an enum (`FIXED`, `NEGOTIABLE`, `CONTACT_FOR_PRICE`, `WHOLESAL
 `BULK_TIERED`) rather than a nullable price, because "contact for price" is a first-class
 Caribbean trading pattern, not a missing value.
 
+### 6.1 Farm Updates
+
+A farm's public profile is a storefront, not a static brochure: the owning farmer can post a
+short `FarmUpdate` ("First tomato harvest of the season," a restock, a note of thanks), optionally
+linked to one of their own listings. Updates belong to one farm, have no comments or likes, and
+never appear in the Community feed uninvited — that boundary is what keeps Community "useful, not
+an advertising feed" (docs/PRODUCT_ARCHITECTURE.md §1). Server-side authorization mirrors listing
+ownership: a farmer can only link an update to a listing they themselves sell.
+
 ## 7. Trust architecture
 
 Trust is the scarcest resource in an agricultural marketplace where strangers transact in cash.

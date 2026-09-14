@@ -127,6 +127,30 @@ export type FarmProfile = {
   updatedAt: string;
 };
 
+/**
+ * A short storefront post from a farm — "First tomato harvest of the
+ * season" — optionally pointing at one of the farm's own listings or a
+ * buyer request it can fulfil. Deliberately not a CommunityPost: it belongs
+ * to one farm's profile, has no comments/likes, and never appears in the
+ * Community feed uninvited (docs/PRODUCT_ARCHITECTURE.md §2).
+ */
+export type FarmUpdate = {
+  id: string;
+  farmId: string;
+  authorId: string;
+  body: string;
+  imageUrls: string[];
+  listingId?: string;
+  buyerRequestId?: string;
+  isDemoData: boolean;
+  createdAt: string;
+};
+
+export type FarmUpdateView = FarmUpdate & {
+  listing?: Pick<ListingView, 'id' | 'slug' | 'title'>;
+  buyerRequest?: Pick<BuyerRequestView, 'id' | 'slug' | 'title'>;
+};
+
 export const BUSINESS_TYPES = [
   'INPUT_SUPPLIER',
   'EQUIPMENT',
