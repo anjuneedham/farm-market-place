@@ -281,6 +281,7 @@ export function seedBuyerRequests(): SeededRequests {
         quotedPriceMinor: response.price,
         currency: response.price ? 'JMD' : undefined,
         quotedQuantity: response.quantity,
+        status: 'PENDING',
         createdAt: daysAgo(Math.max(0, seed.postedDaysAgo - responseIndex - 1)),
       });
     });

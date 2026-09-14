@@ -34,6 +34,13 @@ Community and Academy are free and useful from the first session. Buyer Requests
 marketplace so that demand can be expressed before supply exists. This is the answer to the
 cold-start problem, and it is why those two features are MVP scope rather than "phase two".
 
+A response to a buyer request (`RequestResponse.status`: `PENDING` → `ACCEPTED`/`REJECTED`) is a
+lightweight quote, not an order — accepting one tells the responder "let's proceed" but is not
+payment or a binding contract. This is deliberate: the MVP flow is DISCOVER → CONTACT → NEGOTIATE
+→ AGREE → ARRANGE PAYMENT (off-platform) → COMPLETE, and building a heavier quote/order object now
+would be complexity ahead of real transaction volume. Revising a declined offer resets it to
+`PENDING` rather than leaving a farmer permanently locked out of a request.
+
 ## 2. The core loop
 
 ```

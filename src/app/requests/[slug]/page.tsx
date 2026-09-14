@@ -8,6 +8,7 @@ import { Money } from '@/components/ui/Money';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { RespondForm } from './RespondForm';
+import { ResponseActions } from './ResponseActions';
 import { humanise, timeAgo } from '@/lib/utils';
 
 export const revalidate = 30;
@@ -122,9 +123,12 @@ export default async function RequestDetailPage({
                     {response.quotedQuantity ? ` for ${response.quotedQuantity} ${request.unit ?? ''}` : ''}
                   </p>
                 ) : null}
-                <ButtonLink href="/messages" size="sm" variant="secondary" className="mt-3">
-                  View conversation
-                </ButtonLink>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <ButtonLink href="/messages" size="sm" variant="secondary">
+                    View conversation
+                  </ButtonLink>
+                  <ResponseActions responseId={response.id} initialStatus={response.status} />
+                </div>
               </div>
             ))}
           </div>

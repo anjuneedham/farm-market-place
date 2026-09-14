@@ -388,6 +388,9 @@ export type BuyerRequestView = BuyerRequest & {
   category?: Category;
 };
 
+export const REQUEST_RESPONSE_STATUSES = ['PENDING', 'ACCEPTED', 'REJECTED'] as const;
+export type RequestResponseStatus = (typeof REQUEST_RESPONSE_STATUSES)[number];
+
 export type RequestResponse = {
   id: string;
   buyerRequestId: string;
@@ -396,7 +399,9 @@ export type RequestResponse = {
   quotedPriceMinor?: number;
   currency?: string;
   quotedQuantity?: number;
+  status: RequestResponseStatus;
   createdAt: string;
+  decidedAt?: string;
 };
 
 // ── Orders ───────────────────────────────────────────────────────────────────

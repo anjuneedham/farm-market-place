@@ -157,6 +157,37 @@ export const requestService = {
     return ok(response);
   },
 
+  async decideResponse(
+    user: User,
+    responseId: string,
+    status: Extract<RequestResponse['status'], 'ACCEPTED' | 'REJECTED'>,
+  ): Promise<ServiceResult<RequestResponse>> {
+    const response = db.buyerRequests.responseById(responseId);
+    if (!response) return fail('not_found', 'We could not find that response.');
+
+    const request = db.buyerRequests.byId(response.buyerRequestId);
+    if (!request) return fail('not_found', 'We could not find that request.');
+
+    // Only the buyer who posted the request can accept or reject an offer on
+    // it — never the responder themselves, and never another buyer.
+    if (request.buyerId !== user.id) {
+      return fail('forbidden', 'Only the buyer who posted this request can respond to offers.');
+    }
+
+    const updated = db.buyerRequests.setResponseStatus(responseId, status);
+    if (!updated) return fail('not_found', 'We could not find that response.');
+
+    await notificationService.notify({
+      userId: response.responderId,
+      type: 'REQUEST_RESPONSE',
+      title: status === 'ACCEPTED' ? `Your offer was accepted` : `Your offer was declined`,
+      body: request.title,
+      href: `/requests/${request.slug}`,
+    });
+
+    return ok(updated);
+  },
+
   async close(user: User, requestId: string): Promise<ServiceResult<BuyerRequest>> {
     const request = db.buyerRequests.byId(requestId);
     if (!request) return fail('not_found', 'We could not find that request.');

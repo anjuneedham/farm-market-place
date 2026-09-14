@@ -536,15 +536,23 @@ model BuyerRequest {
   @@index([buyerId, status, createdAt(sort: Desc)])
 }
 
+enum RequestResponseStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model RequestResponse {
-  id             String   @id @default(cuid())
+  id             String                @id @default(cuid())
   buyerRequestId String
   responderId    String
-  message        String   @db.Text
+  message        String                @db.Text
   quotedPriceMinor Int?
-  currency       String?  @db.VarChar(3)
+  currency       String?               @db.VarChar(3)
   quotedQuantity Float?
-  createdAt      DateTime @default(now())
+  status         RequestResponseStatus @default(PENDING)
+  createdAt      DateTime              @default(now())
+  decidedAt      DateTime?
 
   buyerRequest BuyerRequest @relation(fields: [buyerRequestId], references: [id], onDelete: Cascade)
   responder    User         @relation(fields: [responderId], references: [id], onDelete: Cascade)

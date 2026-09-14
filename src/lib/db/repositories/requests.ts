@@ -111,6 +111,20 @@ export const buyerRequests = {
     return data().requestResponses.filter((r) => r.responderId === responderId).length;
   },
 
+  responseById(id: string): RequestResponse | undefined {
+    return data().requestResponses.find((r) => r.id === id);
+  },
+
+  setResponseStatus(id: string, status: RequestResponse['status']): RequestResponse | undefined {
+    return mutate((db) => {
+      const response = db.requestResponses.find((r) => r.id === id);
+      if (!response) return undefined;
+      response.status = status;
+      response.decidedAt = nowIso();
+      return response;
+    });
+  },
+
   create(
     input: Omit<
       BuyerRequest,
@@ -159,7 +173,9 @@ export const buyerRequests = {
         (r) => r.buyerRequestId === requestId && r.responderId === responderId,
       );
       if (existing) {
-        Object.assign(existing, input, { createdAt: nowIso() });
+        // Revising an offer after a rejection puts it back in front of the
+        // buyer rather than leaving it permanently marked rejected.
+        Object.assign(existing, input, { status: 'PENDING', decidedAt: undefined, createdAt: nowIso() });
         return existing;
       }
 
@@ -168,6 +184,7 @@ export const buyerRequests = {
         id: newId('response'),
         buyerRequestId: requestId,
         responderId,
+        status: 'PENDING',
         createdAt: nowIso(),
       };
       db.requestResponses.push(response);

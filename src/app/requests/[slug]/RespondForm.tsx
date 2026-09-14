@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Field, FormError, FormSuccess, Input, Textarea } from '@/components/ui/Field';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { initialFormState } from '@/lib/forms';
 import { respondToRequestAction } from '../actions';
@@ -20,7 +21,11 @@ export function RespondForm({ requestId, existing }: { requestId: string; existi
       <FormError message={state.status === 'error' ? state.message : undefined} />
 
       {existing ? (
-        <p className="text-sm text-ink-500">You already responded to this request. Submitting again updates your response.</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm text-ink-500">You already responded to this request. Submitting again updates your response.</p>
+          {existing.status === 'ACCEPTED' ? <Badge tone="positive">Accepted</Badge> : null}
+          {existing.status === 'REJECTED' ? <Badge tone="danger">Declined — you can revise and resend</Badge> : null}
+        </div>
       ) : null}
 
       <Field label="Your message" required error={state.fields?.message}>
