@@ -49,6 +49,9 @@ export default async function FarmerProfilePage({
   const reviews = db.reviews.forSubject(farm.userId, { perPage: 10 });
   const isPremium = db.premium.isPremium(farm.userId);
   const savedInitially = user ? db.favorites.has(user.id, 'FARM', farm.id) : false;
+  const savedListingIds = user
+    ? new Set(db.favorites.forUser(user.id, 'LISTING').map((f) => f.targetId))
+    : undefined;
   const isOwner = user?.id === farm.userId;
 
   return (
@@ -112,7 +115,7 @@ export default async function FarmerProfilePage({
             <section>
               <h2 className="text-h2 mb-4">Products ({listings.length})</h2>
               {listings.length > 0 ? (
-                <ListingCardGrid listings={listings} />
+                <ListingCardGrid listings={listings} signedIn={Boolean(user)} savedIds={savedListingIds} />
               ) : (
                 <EmptyState title="No active listings right now." description="Check back soon, or message the farm directly." />
               )}

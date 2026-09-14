@@ -38,6 +38,9 @@ export default async function BusinessProfilePage({
   const community = business.communityId ? db.locations.community(business.communityId) : undefined;
   const listings = db.listings.search({ sellerId: business.userId, perPage: 12 }).items;
   const reviews = db.reviews.forSubject(business.userId, { perPage: 10 });
+  const savedListingIds = user
+    ? new Set(db.favorites.forUser(user.id, 'LISTING').map((f) => f.targetId))
+    : undefined;
   const isOwner = user?.id === business.userId;
 
   return (
@@ -83,7 +86,7 @@ export default async function BusinessProfilePage({
           <section>
             <h2 className="text-h2 mb-4">Products &amp; services ({listings.length})</h2>
             {listings.length > 0 ? (
-              <ListingCardGrid listings={listings} />
+              <ListingCardGrid listings={listings} signedIn={Boolean(user)} savedIds={savedListingIds} />
             ) : (
               <EmptyState title="No active listings right now." />
             )}

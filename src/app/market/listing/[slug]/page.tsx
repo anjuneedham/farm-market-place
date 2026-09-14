@@ -57,6 +57,9 @@ export default async function ListingDetailPage({
   const related = marketplaceService.relatedTo(listing);
   const moreFromSeller = marketplaceService.fromSameSeller(listing);
   const savedInitially = user ? db.favorites.has(user.id, 'LISTING', listing.id) : false;
+  const savedListingIds = user
+    ? new Set(db.favorites.forUser(user.id, 'LISTING').map((f) => f.targetId))
+    : undefined;
   const isOwner = user?.id === listing.sellerId;
 
   return (
@@ -142,7 +145,7 @@ export default async function ListingDetailPage({
           {moreFromSeller.length > 0 ? (
             <div className="mt-10">
               <h2 className="text-h3 mb-3 font-semibold">More from {listing.sellerName}</h2>
-              <ListingCardGrid listings={moreFromSeller} />
+              <ListingCardGrid listings={moreFromSeller} signedIn={Boolean(user)} savedIds={savedListingIds} />
             </div>
           ) : null}
         </div>
@@ -176,7 +179,7 @@ export default async function ListingDetailPage({
             </dl>
 
             {!isOwner ? (
-              <div className="mt-5">
+              <div id="contact" className="mt-5 scroll-mt-20">
                 <ContactSellerPanel listing={listing} signedIn={Boolean(user)} />
               </div>
             ) : (
@@ -218,7 +221,7 @@ export default async function ListingDetailPage({
       {related.length > 0 ? (
         <div className="mt-14">
           <h2 className="text-h2 mb-4">You might also like</h2>
-          <ListingCardGrid listings={related} />
+          <ListingCardGrid listings={related} signedIn={Boolean(user)} savedIds={savedListingIds} />
         </div>
       ) : null}
     </div>

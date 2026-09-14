@@ -114,6 +114,7 @@ export function FilterBar({
           <option value="price_asc">Price: low to high</option>
           <option value="price_desc">Price: high to low</option>
           <option value="rating">Top rated sellers</option>
+          <option value="popular">Most viewed</option>
         </Select>
 
         <div className="flex items-center rounded-[10px] border border-line-strong px-3">

@@ -163,6 +163,15 @@ Two entities, deliberately split:
 Sellers may create a listing against a catalogue product, or propose a new product which lands
 in an admin review queue. This keeps the catalogue clean without blocking sellers.
 
+`/market` is a marketplace, not a flat product directory: with no filter active it renders
+curated sections (Fresh Today, Popular Products, Wholesale Opportunities, Featured Farmers,
+Products Near You, Buyer Requests, Recently Added), each a thin query over the same
+`ListingFilters`/`db.listings.search()` used everywhere else — no separate search index and no
+fabricated content. "Products Near You" personalises from the signed-in user's own farm,
+business or buyer profile region and is an honest empty state (not a fake list) for a signed-out
+visitor or a parish with nothing new. The moment any filter, search term or sort is applied, the
+page falls back to the original filtered, paginated grid.
+
 Pricing modes are an enum (`FIXED`, `NEGOTIABLE`, `CONTACT_FOR_PRICE`, `WHOLESALE`,
 `BULK_TIERED`) rather than a nullable price, because "contact for price" is a first-class
 Caribbean trading pattern, not a missing value.

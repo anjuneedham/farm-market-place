@@ -29,7 +29,7 @@ export default async function SavedPage() {
       <section className="mb-10">
         <h2 className="text-h2 mb-4">Saved listings</h2>
         {listings.length > 0 ? (
-          <ListingCardGrid listings={listings} />
+          <ListingCardGrid listings={listings} signedIn savedIds={new Set(savedListingIds)} />
         ) : (
           <EmptyState
             title="No saved listings yet."

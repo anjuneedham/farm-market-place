@@ -27,7 +27,7 @@ export type ListingFilters = {
   verifiedOnly?: boolean;
   featuredOnly?: boolean;
   status?: Listing['status'];
-  sort?: 'recent' | 'price_asc' | 'price_desc' | 'rating';
+  sort?: 'recent' | 'price_asc' | 'price_desc' | 'rating' | 'popular';
 } & PageParams;
 
 function tiersFor(listingId: string): PriceTier[] {
@@ -161,6 +161,8 @@ export const listings = {
           return (b.priceMinor ?? -1) - (a.priceMinor ?? -1);
         case 'rating':
           return b.sellerRating - a.sellerRating;
+        case 'popular':
+          return b.viewCount - a.viewCount;
         default:
           return b.createdAt.localeCompare(a.createdAt);
       }

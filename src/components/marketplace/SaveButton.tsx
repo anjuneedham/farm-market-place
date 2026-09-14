@@ -13,11 +13,13 @@ export function SaveButton({
   initiallySaved,
   signedIn,
   kind = 'LISTING',
+  className,
 }: {
   listingId: string;
   initiallySaved: boolean;
   signedIn: boolean;
   kind?: FavoriteKind;
+  className?: string;
 }) {
   const router = useRouter();
   const [saved, setSaved] = useState(initiallySaved);
@@ -39,7 +41,11 @@ export function SaveButton({
       label={saved ? 'Remove from saved' : 'Save listing'}
       onClick={handleClick}
       disabled={pending}
-      className={cn('border border-line-strong', saved && 'border-danger/30 bg-danger-soft text-danger')}
+      className={cn(
+        'border border-line-strong',
+        saved && 'border-danger/30 bg-danger-soft text-danger',
+        className,
+      )}
     >
       <Heart className={cn('h-5 w-5', saved && 'fill-current')} aria-hidden />
     </IconButton>
