@@ -360,6 +360,7 @@ model Category {
   children Category[] @relation("CategoryTree")
   products Product[]
   listings Listing[]
+  relatedCourses AcademyCourse[]
 
   @@index([parentId, sortOrder])
   @@index([level, isActive, sortOrder])
@@ -887,23 +888,36 @@ model CommunityCategory {
   @@index([isActive, sortOrder])
 }
 
+/// What a Community post or Academy course can optionally point at in the
+/// marketplace. Loose by id (no foreign key), the same pattern as
+/// Report.targetType/targetId — a citation, not a relation to enforce.
+enum RelatedRefType {
+  LISTING
+  FARM
+  BUSINESS
+  BUYER_REQUEST
+  CATEGORY
+}
+
 model CommunityPost {
-  id             String     @id @default(cuid())
+  id             String          @id @default(cuid())
   categoryId     String
   authorId       String
   title          String
-  slug           String     @unique
-  body           String     @db.Text
+  slug           String          @unique
+  body           String          @db.Text
   imageUrls      String[]
   tags           String[]
-  status         PostStatus @default(PUBLISHED)
-  isPinned       Boolean    @default(false)
-  commentCount   Int        @default(0)
-  likeCount      Int        @default(0)
-  lastActivityAt DateTime   @default(now())
-  isDemoData     Boolean    @default(false)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  status         PostStatus      @default(PUBLISHED)
+  isPinned       Boolean         @default(false)
+  commentCount   Int             @default(0)
+  likeCount      Int             @default(0)
+  lastActivityAt DateTime        @default(now())
+  relatedType    RelatedRefType?
+  relatedId      String?
+  isDemoData     Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   category CommunityCategory @relation(fields: [categoryId], references: [id])
   author   User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -987,14 +1001,16 @@ model AcademyCourse {
   level        String        @default("Beginner")
   estimatedMinutes Int       @default(0)
   countryCode  String?       @db.VarChar(2) // null = region-wide content
+  relatedCategoryId String? // the marketplace category this course most directly teaches
   isPublished  Boolean       @default(true)
   sortOrder    Int           @default(0)
   isDemoData   Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  track   AcademyTrack @relation(fields: [trackId], references: [id])
-  lessons Lesson[]
+  track           AcademyTrack @relation(fields: [trackId], references: [id])
+  relatedCategory Category?    @relation(fields: [relatedCategoryId], references: [id])
+  lessons         Lesson[]
 
   @@index([trackId, isPublished, sortOrder])
   @@index([access, isPublished])

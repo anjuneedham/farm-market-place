@@ -607,6 +607,15 @@ export type CommunityCategory = {
   isActive: boolean;
 };
 
+/**
+ * What a Community post or Academy lesson can optionally point at in the
+ * marketplace. Loose by id (no foreign key) — same pattern as
+ * `Report.targetType`/`targetId` — because it is a citation, not a relation
+ * the schema needs to enforce.
+ */
+export const RELATED_REF_TYPES = ['LISTING', 'FARM', 'BUSINESS', 'BUYER_REQUEST', 'CATEGORY'] as const;
+export type RelatedRefType = (typeof RELATED_REF_TYPES)[number];
+
 export type CommunityPost = {
   id: string;
   categoryId: string;
@@ -621,6 +630,8 @@ export type CommunityPost = {
   commentCount: number;
   likeCount: number;
   lastActivityAt: string;
+  relatedType?: RelatedRefType;
+  relatedId?: string;
   isDemoData: boolean;
   createdAt: string;
   updatedAt: string;
@@ -678,6 +689,8 @@ export type AcademyCourse = {
   level: string;
   estimatedMinutes: number;
   countryCode?: string;
+  /** The marketplace category this course most directly teaches, if any — powers "Related on AgriLoop". */
+  relatedCategoryId?: string;
   isPublished: boolean;
   sortOrder: number;
   isDemoData: boolean;

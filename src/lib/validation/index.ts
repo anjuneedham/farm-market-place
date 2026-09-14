@@ -145,6 +145,11 @@ export const postSchema = z.object({
   body: trimmed(10_000).min(20, 'Add a little more detail so people can help.'),
   tags: z.array(trimmed(24)).max(6).default([]),
   imageUrls: z.array(z.string().trim().max(400)).max(4).default([]),
+  relatedType: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.enum(['LISTING', 'FARM', 'BUSINESS', 'BUYER_REQUEST']).optional(),
+  ),
+  relatedSlug: z.preprocess((v) => (v === '' ? undefined : v), z.string().trim().max(200).optional()),
 });
 
 export const commentSchema = z.object({

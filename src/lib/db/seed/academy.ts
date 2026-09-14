@@ -32,6 +32,8 @@ type CourseSeed = {
   summary: string;
   level: string;
   access?: 'FREE' | 'PREMIUM';
+  /** Marketplace category slug this course most directly teaches — powers "Related on AgriLoop". */
+  relatedCategory?: string;
   lessons: LessonSeed[];
 };
 
@@ -88,6 +90,7 @@ const COURSES: CourseSeed[] = [
     title: 'Tomato Production',
     summary: 'Field and greenhouse tomato: establishment, support, water, and the problems that cost most.',
     level: 'Intermediate',
+    relatedCategory: 'vegetables',
     lessons: [
       {
         title: 'Establishing a tomato crop',
@@ -111,6 +114,7 @@ const COURSES: CourseSeed[] = [
     title: 'Scotch Bonnet & Sweet Pepper',
     summary: 'Pepper from nursery to harvest, and why pepper suits farmers with buyers lined up.',
     level: 'Intermediate',
+    relatedCategory: 'vegetables',
     lessons: [
       {
         title: 'Why pepper suits a small farm',
@@ -134,6 +138,7 @@ const COURSES: CourseSeed[] = [
     title: 'Yam, Sweet Potato & Ground Provisions',
     summary: 'The crops that carry Jamaican agriculture: planting material, hills, and selling in bulk.',
     level: 'Intermediate',
+    relatedCategory: 'root-crops',
     lessons: [
       {
         title: 'Planting material decides your crop',
@@ -157,6 +162,7 @@ const COURSES: CourseSeed[] = [
     title: 'Poultry: Broilers and Layers',
     summary: 'Housing, feed, the first two weeks, and the biosecurity that protects everything else.',
     level: 'Beginner',
+    relatedCategory: 'chicken',
     lessons: [
       {
         title: 'Broilers or layers — choosing your operation',
@@ -180,6 +186,7 @@ const COURSES: CourseSeed[] = [
     title: 'Goats and Sheep',
     summary: 'Small ruminants on Jamaican pasture: stocking, parasites, breeding and selling.',
     level: 'Beginner',
+    relatedCategory: 'goat',
     lessons: [
       {
         title: 'Pasture and stocking rate',
@@ -382,6 +389,7 @@ export function seedAcademy(): SeededAcademy {
       level: seed.level,
       estimatedMinutes: totalMinutes,
       countryCode: 'JM',
+      relatedCategoryId: seed.relatedCategory ? `cat_${seed.relatedCategory}` : undefined,
       isPublished: true,
       sortOrder: courseIndex,
       isDemoData: true,

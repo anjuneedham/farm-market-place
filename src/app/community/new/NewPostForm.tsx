@@ -48,6 +48,25 @@ export function NewPostForm({
         )}
       </Field>
 
+      <div className="space-y-2.5 rounded-lg border border-line bg-canvas p-4">
+        <p className="text-sm font-medium text-ink-800">Link something on AgriLoop (optional)</p>
+        <p className="text-xs text-ink-500">
+          Talking about a specific product, farm, business or buyer request? Link it so people can
+          find it — paste its URL slug (the part after the last /).
+        </p>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[160px_1fr]">
+          <Select name="relatedType" defaultValue="" aria-label="What to link">
+            <option value="">Nothing</option>
+            <option value="LISTING">A product listing</option>
+            <option value="FARM">A farm</option>
+            <option value="BUSINESS">A business</option>
+            <option value="BUYER_REQUEST">A buyer request</option>
+          </Select>
+          <Input name="relatedSlug" placeholder="e.g. fresh-scotch-bonnet-pepper-green-valley-farm" />
+        </div>
+        {state.fields?.relatedSlug ? <p className="text-sm font-medium text-danger">{state.fields.relatedSlug}</p> : null}
+      </div>
+
       <Button type="submit" disabled={pending}>
         {pending ? 'Posting…' : 'Publish post'}
       </Button>

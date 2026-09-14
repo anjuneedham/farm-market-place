@@ -10,6 +10,8 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { FeatureStatus } from '@/components/ui/States';
 import { LessonActions } from '@/components/academy/LessonActions';
+import { RelatedOnAgriLoop } from '@/components/shared/RelatedOnAgriLoop';
+import { resolveRelatedRef } from '@/lib/related';
 
 export const revalidate = 3600;
 
@@ -46,6 +48,9 @@ export default async function LessonPage({
 
   const hasAccess = lesson.access === 'FREE' || premiumService.canAccess(user, 'premium_education');
   const progress = user ? db.academy.progressForLesson(user.id, lesson.id) : undefined;
+  const related = course.relatedCategoryId
+    ? resolveRelatedRef('CATEGORY', course.relatedCategoryId)
+    : undefined;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -87,6 +92,12 @@ export default async function LessonPage({
               to track your progress through this course.
             </p>
           )}
+
+          {related ? (
+            <div className="mt-6">
+              <RelatedOnAgriLoop related={related} />
+            </div>
+          ) : null}
         </>
       ) : (
         <div className="mt-6 space-y-4">

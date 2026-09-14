@@ -192,6 +192,20 @@ never appear in the Community feed uninvited — that boundary is what keeps Com
 an advertising feed" (docs/PRODUCT_ARCHITECTURE.md §1). Server-side authorization mirrors listing
 ownership: a farmer can only link an update to a listing they themselves sell.
 
+### 6.2 Community and Academy ↔ Marketplace
+
+A single reusable component, `RelatedOnAgriLoop`, is the one seam connecting Community and
+Academy back to the marketplace — a small card, never a feed of suggestions, because Community
+must stay useful rather than become an advertising surface (§1). A Community post may optionally
+carry a loose `relatedType`/`relatedId` pointing at a listing, farm, business or buyer request
+(the same polymorphic-reference pattern as `Report.targetType`/`targetId` — no foreign key, just
+an id resolved at render time via `resolveRelatedRef()`, which quietly omits the panel if the
+referenced record no longer exists rather than showing a broken link). The author supplies it by
+pasting a real slug when writing a post; nothing is auto-suggested or fabricated. An Academy
+course carries an admin/seed-set `relatedCategoryId` pointing at the marketplace category it most
+directly teaches (e.g. "Tomato Production" → Vegetables), shown on both the course page and its
+lessons.
+
 ## 7. Trust architecture
 
 Trust is the scarcest resource in an agricultural marketplace where strangers transact in cash.

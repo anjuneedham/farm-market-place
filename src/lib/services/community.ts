@@ -3,13 +3,29 @@ import { db } from '@/lib/db/repositories';
 import { notificationService } from '@/lib/integrations';
 import { fail, ok, type ServiceResult } from '@/lib/integrations/types';
 import { checkRateLimit } from '@/lib/security/rate-limit';
-import type { Comment, CommunityPost, User } from '@/lib/types';
+import type { Comment, CommunityPost, RelatedRefType, User } from '@/lib/types';
 import type { z } from 'zod';
 import type { commentSchema, postSchema, reportSchema } from '@/lib/validation';
 
 type PostInput = z.infer<typeof postSchema>;
 type CommentInput = z.infer<typeof commentSchema>;
 type ReportInput = z.infer<typeof reportSchema>;
+
+/** Resolves the slug a post author pasted into a real id, or undefined if nothing matches. */
+function resolveRelatedSlug(type: RelatedRefType, slug: string): string | undefined {
+  switch (type) {
+    case 'LISTING':
+      return db.listings.bySlug(slug)?.id;
+    case 'FARM':
+      return db.profiles.farmBySlug(slug)?.id;
+    case 'BUSINESS':
+      return db.profiles.businessBySlug(slug)?.id;
+    case 'BUYER_REQUEST':
+      return db.buyerRequests.bySlug(slug)?.id;
+    default:
+      return undefined;
+  }
+}
 
 /**
  * AgriLoop Community is free for everyone, forever — there is no premium check
@@ -42,6 +58,16 @@ export const communityService = {
       return fail('validation', 'Choose a category.', { categoryId: 'Choose a category.' });
     }
 
+    let relatedId: string | undefined;
+    if (input.relatedType && input.relatedSlug) {
+      relatedId = resolveRelatedSlug(input.relatedType, input.relatedSlug);
+      if (!relatedId) {
+        return fail('validation', 'We could not find anything matching that link — check the slug and try again.', {
+          relatedSlug: 'We could not find anything matching that link.',
+        });
+      }
+    }
+
     const post = db.community.createPost({
       categoryId,
       authorId: user.id,
@@ -49,6 +75,8 @@ export const communityService = {
       body: input.body,
       imageUrls: input.imageUrls,
       tags: input.tags,
+      relatedType: relatedId ? input.relatedType : undefined,
+      relatedId,
     });
 
     db.analytics.record({

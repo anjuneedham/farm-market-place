@@ -8,6 +8,8 @@ import { LikeButton } from '@/components/community/LikeButton';
 import { CommentThread } from '@/components/community/CommentThread';
 import { CommentForm } from '@/components/community/CommentForm';
 import { ReportButton } from '@/components/marketplace/ReportButton';
+import { RelatedOnAgriLoop } from '@/components/shared/RelatedOnAgriLoop';
+import { resolveRelatedRef } from '@/lib/related';
 import { timeAgo } from '@/lib/utils';
 
 export const revalidate = 30;
@@ -34,6 +36,7 @@ export default async function CommunityPostPage({
   if (!post || post.category.slug !== categorySlug) notFound();
 
   const comments = db.community.commentsFor(post.id);
+  const related = post.relatedType && post.relatedId ? resolveRelatedRef(post.relatedType, post.relatedId) : undefined;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -70,6 +73,12 @@ export default async function CommunityPostPage({
               #{tag}
             </span>
           ))}
+        </div>
+      ) : null}
+
+      {related ? (
+        <div className="mt-5">
+          <RelatedOnAgriLoop related={related} />
         </div>
       ) : null}
 

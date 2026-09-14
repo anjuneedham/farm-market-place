@@ -7,6 +7,8 @@ import { premiumService } from '@/lib/services/premium';
 import { CardLink } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/academy/ProgressBar';
+import { RelatedOnAgriLoop } from '@/components/shared/RelatedOnAgriLoop';
+import { resolveRelatedRef } from '@/lib/related';
 
 export const revalidate = 3600;
 
@@ -36,6 +38,9 @@ export default async function AcademyCoursePage({
   const completed = user ? db.academy.completedLessonIds(user.id) : new Set<string>();
   const progress = user ? db.academy.courseProgress(user.id, course.id) : 0;
   const hasPremiumAccess = premiumService.canAccess(user, 'premium_education');
+  const related = course.relatedCategoryId
+    ? resolveRelatedRef('CATEGORY', course.relatedCategoryId)
+    : undefined;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -58,6 +63,12 @@ export default async function AcademyCoursePage({
         <div className="mt-6">
           <ProgressBar value={progress} />
           <p className="mt-1.5 text-xs text-ink-500">{progress}% complete</p>
+        </div>
+      ) : null}
+
+      {related ? (
+        <div className="mt-6">
+          <RelatedOnAgriLoop related={related} />
         </div>
       ) : null}
 
