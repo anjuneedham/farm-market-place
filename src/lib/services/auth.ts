@@ -26,19 +26,30 @@ const GENERIC_CREDENTIALS_ERROR = 'Email or password is incorrect.';
  */
 export type SignUpOutcome = { user: User; needsEmailConfirmation: false } | { user: null; needsEmailConfirmation: true };
 
-/** Translates a handful of common Supabase Auth errors into copy a user should see. */
-function humaniseAuthError(message: string): string {
-  const lower = message.toLowerCase();
-  if (lower.includes('already registered') || lower.includes('already exists')) {
-    return 'An account with that email already exists.';
+/**
+ * Translates a Supabase Auth error into copy a user should see. Branches on
+ * `error.code` — a stable identifier GoTrue sets on every AuthError (e.g.
+ * 'email_not_confirmed', 'user_already_exists') — rather than matching
+ * `error.message` text, which is human-readable copy Supabase can reword at
+ * any time without notice and isn't a documented, stable contract.
+ */
+function humaniseAuthError(error: { code?: string; message: string }): string {
+  switch (error.code) {
+    case 'user_already_exists':
+    case 'email_exists':
+      return 'An account with that email already exists.';
+    case 'weak_password':
+      return 'Choose a stronger password (at least 10 characters).';
+    case 'validation_failed':
+    case 'email_address_invalid':
+      return 'Enter a valid email address.';
+    case 'email_not_confirmed':
+      return 'Confirm your email before signing in — check your inbox for the link we sent.';
+    case 'invalid_credentials':
+      return GENERIC_CREDENTIALS_ERROR;
+    default:
+      return 'Something went wrong creating your account. Try again in a moment.';
   }
-  if (lower.includes('password')) {
-    return 'Choose a stronger password (at least 10 characters).';
-  }
-  if (lower.includes('email') && lower.includes('invalid')) {
-    return 'Enter a valid email address.';
-  }
-  return 'Something went wrong creating your account. Try again in a moment.';
 }
 
 export const authService = {
@@ -105,7 +116,8 @@ export const authService = {
 
     if (error) {
       if (error.status === 429) return fail('rate_limited', 'Too many sign-up attempts. Try again in a few minutes.');
-      return fail('conflict', humaniseAuthError(error.message), { email: humaniseAuthError(error.message) });
+      const message = humaniseAuthError(error);
+      return fail('conflict', message, { email: message });
     }
     if (!data.user) {
       return fail('validation', 'Could not create your account. Try again.');
@@ -136,8 +148,8 @@ export const authService = {
 
     if (error) {
       if (error.status === 429) return fail('rate_limited', 'Too many sign-in attempts. Try again in a few minutes.');
-      if (error.message.toLowerCase().includes('email not confirmed')) {
-        return fail('forbidden', 'Confirm your email before signing in — check your inbox for the link we sent.');
+      if (error.code === 'email_not_confirmed') {
+        return fail('forbidden', humaniseAuthError(error));
       }
       return fail('validation', GENERIC_CREDENTIALS_ERROR);
     }
