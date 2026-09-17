@@ -2,7 +2,9 @@
 
 import { useActionState, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Field, FormError, Input, Select } from '@/components/ui/Field';
+import Link from 'next/link';
+import { Field, FormError, FormSuccess, Input, Select } from '@/components/ui/Field';
+import { PasswordField } from '@/components/ui/PasswordField';
 import { Button } from '@/components/ui/Button';
 import { BUSINESS_TYPES, BUYER_TYPES, type UserRole } from '@/lib/types';
 import { humanise } from '@/lib/utils';
@@ -26,6 +28,21 @@ export function SignUpForm() {
 
   const [role, setRole] = useState<UserRole>(initialRole);
   const [state, formAction, pending] = useActionState(signUpAction, initialFormState);
+
+  if (state.status === 'idle' && state.message === 'confirm-email') {
+    return (
+      <div className="space-y-4">
+        <FormSuccess message="Check your email to confirm your account before signing in." />
+        <p className="text-sm text-ink-600">
+          We sent a confirmation link to the address you signed up with. Once you confirm it, come back and{' '}
+          <Link href="/signin" className="font-medium text-brand-600 hover:underline">
+            sign in
+          </Link>
+          .
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className="space-y-5">
@@ -64,19 +81,22 @@ export function SignUpForm() {
         )}
       </Field>
 
-      <Field label="Password" hint="At least 10 characters." required error={state.fields?.password}>
-        {({ id, describedBy, invalid }) => (
-          <Input
-            id={id}
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            aria-describedby={describedBy}
-            invalid={invalid}
-          />
-        )}
-      </Field>
+      <PasswordField
+        label="Password"
+        name="password"
+        autoComplete="new-password"
+        hint="At least 10 characters."
+        required
+        error={state.fields?.password}
+      />
+
+      <PasswordField
+        label="Confirm password"
+        name="confirmPassword"
+        autoComplete="new-password"
+        required
+        error={state.fields?.confirmPassword}
+      />
 
       <Field label="Parish" required error={state.fields?.regionId}>
         {({ id, describedBy, invalid }) => (

@@ -51,7 +51,6 @@ export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING_DELETION';
 export type User = {
   id: string;
   email: string;
-  passwordHash: string;
   name: string;
   role: UserRole;
   status: UserStatus;
@@ -72,15 +71,6 @@ export type PublicUser = {
   role: UserRole;
   avatarUrl?: string;
   createdAt: string;
-};
-
-export type SessionRecord = {
-  id: string;
-  userId: string;
-  tokenHash: string;
-  expiresAt: string;
-  createdAt: string;
-  lastUsedAt: string;
 };
 
 // ── Profiles ─────────────────────────────────────────────────────────────────

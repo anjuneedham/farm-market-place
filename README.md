@@ -12,25 +12,29 @@ shaped the way it is, and [`MVP_ROADMAP.md`](./docs/MVP_ROADMAP.md) for what is 
 ## Stack
 
 Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS v4 · Zod · Prisma
-(schema only — see below) · scrypt-based auth with signed session cookies.
+(schema only — see below) · Supabase Auth for accounts, sessions and the User/FarmProfile/
+BusinessProfile/BuyerProfile tables, enforced with Postgres Row Level Security.
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local   # generate AUTH_SECRET: openssl rand -base64 48
+cp .env.example .env.local   # fill in NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 npm run dev
 ```
 
-Open http://localhost:3000. The app runs on an **in-memory data source**, seeded with realistic
-Jamaican demo data (farms, listings, buyer requests, community posts, Academy courses) — no
-database required to develop against it. See
+`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` come from your Supabase
+project's dashboard (Project Settings → API) — see `.env.example` and `docs/SECURITY.md §1` for
+what each does. Everything else (marketplace listings, community, orders, etc.) still runs on an
+**in-memory data source**, seeded with realistic Jamaican demo data — no separate database
+required for that part. See
 [`docs/DATABASE_SCHEMA.md § Migration path`](./docs/DATABASE_SCHEMA.md#migration-path) for moving
-to Postgres.
+it to Postgres too.
 
 ### Demo accounts
 
-Every seeded account shares the password `agriloop-demo-2026`. A few to try:
+Every seeded account shares the password `agriloop-demo-2026` and is a real Supabase Auth account
+(not simulated) — sign in with these exactly as you would a real user. A few to try:
 
 | Email | Role |
 | --- | --- |

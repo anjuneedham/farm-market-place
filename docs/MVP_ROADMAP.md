@@ -12,7 +12,7 @@ Phases follow the sequence in the product brief. Status reflects the current rep
 | 2 | Architecture documentation | ✅ | 8 documents in `/docs` |
 | 3 | Database schema | ✅ | `prisma/schema.prisma`, validated |
 | 4 | Design system | ✅ | Tokens + primitives + patterns in `src/components/ui` |
-| 5 | Authentication | ✅ | Email/password, scrypt, HMAC session cookies, password reset seam |
+| 5 | Authentication | ✅ | Supabase Auth (email/password + reset), Postgres RLS on User/profile tables |
 | 6 | Marketplace | ✅ | Categories, listings, detail pages, search, filters, pagination, curated homepage sections |
 | 7 | Farmer / buyer / business profiles | ✅ | Public pages, verification badges, reviews |
 | 8 | Community | ✅ | 9 categories, posts, comments, likes, reporting |

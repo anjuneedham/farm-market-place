@@ -1,10 +1,22 @@
+/**
+ * The in-memory demo/seed copy of people and their profiles — read by
+ * marketplace display surfaces (directories, listings, search, admin's demo
+ * views) exactly as before Supabase Auth was introduced.
+ *
+ * This is NOT where authentication or a signed-in user's own account lives
+ * anymore — that's src/lib/supabase/account.ts, backed by real Supabase
+ * Postgres tables with the same ids as the demo people seeded here (see
+ * src/lib/db/seed/helpers.ts's demoUserId()), so both stores agree on who's
+ * who. A real (non-demo) signup only ever writes to Supabase; it has no
+ * shadow row here, so it won't appear in these in-memory-backed pages yet —
+ * see the migration report for the full Tier 1/Tier 2 explanation.
+ */
 import { data, mutate } from '../datasource';
 import type {
   BusinessProfile,
   BuyerProfile,
   FarmProfile,
   PublicUser,
-  SessionRecord,
   User,
   UserRole,
 } from '@/lib/types';
@@ -24,11 +36,6 @@ export function toPublicUser(user: User): PublicUser {
 export const users = {
   byId(id: string): User | undefined {
     return data().users.find((u) => u.id === id);
-  },
-
-  byEmail(email: string): User | undefined {
-    const normalised = email.trim().toLowerCase();
-    return data().users.find((u) => u.email.toLowerCase() === normalised);
   },
 
   publicById(id: string): PublicUser | undefined {
@@ -56,21 +63,6 @@ export const users = {
     return data().users.filter((u) => u.role === role).length;
   },
 
-  create(input: Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'isDemoData'>): User {
-    return mutate((db) => {
-      const user: User = {
-        ...input,
-        email: input.email.trim().toLowerCase(),
-        id: newId('user'),
-        isDemoData: false,
-        createdAt: nowIso(),
-        updatedAt: nowIso(),
-      };
-      db.users.push(user);
-      return user;
-    });
-  },
-
   update(id: string, patch: Partial<Omit<User, 'id' | 'createdAt'>>): User | undefined {
     return mutate((db) => {
       const user = db.users.find((u) => u.id === id);
@@ -84,54 +76,6 @@ export const users = {
     mutate((db) => {
       const user = db.users.find((u) => u.id === id);
       if (user) user.lastSeenAt = nowIso();
-    });
-  },
-};
-
-export const sessions = {
-  byTokenHash(tokenHash: string): SessionRecord | undefined {
-    return data().sessions.find((s) => s.tokenHash === tokenHash);
-  },
-
-  create(userId: string, tokenHash: string, expiresAt: string): SessionRecord {
-    return mutate((db) => {
-      const session: SessionRecord = {
-        id: newId('session'),
-        userId,
-        tokenHash,
-        expiresAt,
-        createdAt: nowIso(),
-        lastUsedAt: nowIso(),
-      };
-      db.sessions.push(session);
-      return session;
-    });
-  },
-
-  touch(tokenHash: string): void {
-    mutate((db) => {
-      const session = db.sessions.find((s) => s.tokenHash === tokenHash);
-      if (session) session.lastUsedAt = nowIso();
-    });
-  },
-
-  destroy(tokenHash: string): void {
-    mutate((db) => {
-      db.sessions = db.sessions.filter((s) => s.tokenHash !== tokenHash);
-    });
-  },
-
-  /** Invalidates every session for a user — used on suspension and password change. */
-  destroyAllForUser(userId: string): void {
-    mutate((db) => {
-      db.sessions = db.sessions.filter((s) => s.userId !== userId);
-    });
-  },
-
-  purgeExpired(): void {
-    const now = nowIso();
-    mutate((db) => {
-      db.sessions = db.sessions.filter((s) => s.expiresAt > now);
     });
   },
 };

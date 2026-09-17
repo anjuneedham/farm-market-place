@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Heart, ListChecks, Package, Sparkles } from 'lucide-react';
 import { requireRole } from '@/lib/auth/session';
 import { db } from '@/lib/db/repositories';
+import { getBuyerProfile } from '@/lib/supabase/account';
+import { createClient } from '@/lib/supabase/server';
 import { buyerStats } from '@/lib/services/stats';
 import { premiumService } from '@/lib/services/premium';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
@@ -19,7 +21,8 @@ export default async function BuyerDashboardPage() {
   const { user } = await requireRole('BUYER', '/dashboard/buyer');
   const stats = buyerStats(user.id);
   const isPremium = premiumService.isPremium(user.id);
-  const buyer = db.profiles.buyerByUserId(user.id);
+  const supabase = await createClient();
+  const buyer = await getBuyerProfile(supabase, user.id);
   const currency = buyer ? db.locations.country(buyer.countryCode)?.currency ?? 'JMD' : 'JMD';
 
   return (

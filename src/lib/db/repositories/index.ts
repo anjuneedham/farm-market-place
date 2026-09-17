@@ -17,7 +17,7 @@ import {
   shoppingLists,
   verification,
 } from './social';
-import { profiles, sessions, users } from './users';
+import { profiles, users } from './users';
 
 /**
  * The repository layer — the only place that knows about the data source.
@@ -30,7 +30,6 @@ import { profiles, sessions, users } from './users';
 export const db = {
   locations,
   users,
-  sessions,
   profiles,
   catalog,
   listings,

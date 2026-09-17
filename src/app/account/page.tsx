@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import { requireSession } from '@/lib/auth/session';
 import { db } from '@/lib/db/repositories';
+import { getBuyerProfile } from '@/lib/supabase/account';
+import { createClient } from '@/lib/supabase/server';
 import { dashboardPathFor } from '@/lib/auth/permissions';
 import { humanise } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { ProfileForm } from './ProfileForm';
 import { PasswordForm } from './PasswordForm';
+import { BuyerProfileForm } from './BuyerProfileForm';
 
 export const metadata: Metadata = { title: 'Account Settings' };
 export const dynamic = 'force-dynamic';
@@ -14,6 +17,9 @@ export const dynamic = 'force-dynamic';
 export default async function AccountPage() {
   const { user } = await requireSession('/account');
   const verification = db.verification.forUser(user.id);
+  const supabase = await createClient();
+  const buyer = user.role === 'BUYER' ? await getBuyerProfile(supabase, user.id) : null;
+  const regions = user.role === 'BUYER' ? db.locations.regions('JM') : [];
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
@@ -32,6 +38,13 @@ export default async function AccountPage() {
           <h2 className="text-h2 mb-4">Profile</h2>
           <ProfileForm user={user} />
         </section>
+
+        {user.role === 'BUYER' ? (
+          <section>
+            <h2 className="text-h2 mb-4">Buyer profile</h2>
+            <BuyerProfileForm buyer={buyer} regions={regions} />
+          </section>
+        ) : null}
 
         <section>
           <h2 className="text-h2 mb-4">Password</h2>

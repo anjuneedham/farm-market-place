@@ -1,5 +1,5 @@
 import type { Comment, CommunityCategory, CommunityPost, PostLike } from '@/lib/types';
-import { daysAgo, slugify } from './helpers';
+import { daysAgo, demoUserId, slugify } from './helpers';
 
 const CATEGORIES: Array<[name: string, icon: string, description: string]> = [
   ['Ask the Community', 'message-circle-question', 'Any farming question. Somebody here has faced it before.'],
@@ -351,7 +351,7 @@ export function seedCommunity(): SeededCommunity {
     posts.push({
       id,
       categoryId: `ccat_${seed.category}`,
-      authorId: seed.author,
+      authorId: demoUserId(seed.author),
       title: seed.title,
       slug: `${slugify(seed.title)}`.slice(0, 70),
       body: seed.body,
@@ -371,7 +371,7 @@ export function seedCommunity(): SeededCommunity {
       comments.push({
         id: `comment_${index + 1}_${commentIndex + 1}`,
         postId: id,
-        authorId: comment.author,
+        authorId: demoUserId(comment.author),
         body: comment.body,
         status: 'PUBLISHED',
         isDemoData: true,

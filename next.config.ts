@@ -5,14 +5,19 @@ import type { NextConfig } from 'next';
  * The CSP intentionally omits 'unsafe-eval'. Next.js needs 'unsafe-inline'
  * for its bootstrap script in this configuration; moving to a nonce-based
  * policy is tracked as post-MVP hardening.
+ *
+ * connect-src includes the Supabase project host so the browser Supabase
+ * client (src/lib/supabase/client.ts) can reach Auth + PostgREST directly —
+ * falls back to the wildcard only if the env var isn't set at build time.
  */
+const supabaseConnectSrc = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://*.supabase.co';
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  `connect-src 'self' ${supabaseConnectSrc}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

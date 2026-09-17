@@ -8,28 +8,39 @@ do.
 
 ## 1. Authentication
 
-**Passwords.** `scrypt` (N=16384, r=8, p=1, 64-byte key) with a 16-byte random salt per user,
-via Node's `crypto`. Stored as `scrypt$N$r$p$salt$hash`. Verification is constant-time
-(`timingSafeEqual`). The algorithm and parameters are recorded in the hash, so they can be
-upgraded with transparent rehash-on-login.
+Identity is fully owned by **Supabase Auth (GoTrue)** — this app never stores a password hash or
+mints its own session token. `src/lib/auth/session.ts` calls `supabase.auth.getUser()` (which
+revalidates the JWT against Supabase on every call, not a cached cookie payload) and joins the
+result to the matching `public."User"` row; `proxy.ts` refreshes the Supabase session cookie pair
+on every request via `src/lib/supabase/middleware.ts`.
 
-Minimum 10 characters, checked against a small list of obvious passwords. No composition rules
-(they push users to `Password1!`) and no maximum length below 200.
+**Passwords.** Hashing, storage and verification are entirely Supabase's. This app only enforces
+a client-visible strength floor before ever calling `supabase.auth.signUp()`/`updateUser()`:
+minimum 10 characters (`src/lib/auth/password.ts`), checked against a small list of obvious
+passwords. No composition rules (they push users to `Password1!`), no maximum length below 200.
+Enable Supabase's built-in "leaked password protection" (HaveIBeenPwned check) in the dashboard —
+see the migration report for why this isn't set from code.
 
-**Sessions.** Opaque 32-byte random token, HMAC-SHA256 signed with `AUTH_SECRET`, stored in an
-`httpOnly`, `secure` (production), `sameSite=lax`, `path=/` cookie with a 30-day expiry. Only the
-SHA-256 hash of the token is persisted, so a database leak does not yield usable sessions.
-Sessions are invalidated on sign-out, password change and account suspension.
+**Sessions.** Supabase issues a short-lived access token (JWT) plus a refresh token, both in
+`httpOnly` cookies managed by `@supabase/ssr`. Password change re-authenticates with the current
+password via `signInWithPassword` before Supabase accepts a new one
+(`src/app/account/actions.ts`). Suspending an account (`status !== 'ACTIVE'`) signs the session out
+the next time `getSession()` runs for that user; there is no service-role key in this app to force
+an immediate global sign-out of a still-open browser tab — see the migration report's known
+limitations.
 
-`AUTH_SECRET` has no default. The app refuses to boot in production without it.
-
-**Password reset.** Single-use token, hashed at rest, 60-minute expiry, invalidated on use.
-Response is identical whether or not the email exists — no account enumeration.
+**Password reset.** `supabase.auth.resetPasswordForEmail()` — a PKCE code emailed to the address,
+exchanged for a short-lived recovery session at `/reset-password`
+(`supabase.auth.exchangeCodeForSession`), which is what lets `updateUser({ password })` succeed
+without the old password. The response is identical whether or not the email exists — no account
+enumeration.
 
 **Sign-in responses** are also non-enumerating: "Email or password is incorrect" for both cases.
 
-**Future providers.** Google, Apple and phone auth are accommodated by an `AuthProvider` seam;
-no OAuth complexity is built into the MVP.
+**Google/Apple/phone auth.** Not implemented. A real "Continue with Google" button requires OAuth
+credentials configured in the Supabase dashboard (Google Cloud Console app, redirect URIs) that
+cannot be provisioned from code — building the button without that configuration would be a dead
+control, which is worse than not offering it.
 
 ## 2. Authorization
 
@@ -48,7 +59,13 @@ Three rules that are never relaxed:
 2. **Every server action re-checks authorization**, even when the UI already hid the control.
    The UI is a convenience; the action is the boundary.
 3. **Admin routes 404 for non-admins.** Admin surface area is not advertised to attackers, and
-   `/admin/**` is additionally gated in `middleware.ts` before any page code runs.
+   `/admin/**` is additionally gated in `proxy.ts` before any page code runs.
+4. **The database enforces ownership independently of the application.** Every table a signed-in
+   user can write to (`User`, `FarmProfile`, `BusinessProfile`, `BuyerProfile`) has Row Level
+   Security policies in Postgres itself (`supabase/migrations`) — a bug or bypass in this app's own
+   authorization code still can't let one user modify another's row, change their own role to
+   `ADMIN`, or edit the admin-only fields (`isVerified`, `ratingAverage`, …) on their own profile,
+   because Postgres refuses the write regardless of what the app believes.
 
 **V2 additions, same pattern.** Accepting/rejecting a buyer-request response re-checks
 `request.buyerId === session.user.id` server-side — the responder cannot decide on their own
@@ -93,13 +110,13 @@ All of this sits in `StorageService`, so the rules survive a provider change.
 
 Limits are listed in [API_ARCHITECTURE.md §8](./API_ARCHITECTURE.md#8-rate-limiting). Beyond
 them: reporting on users, listings, posts, comments, reviews and buyer requests; user blocking
-that suppresses messages and conversation creation in both directions; admin suspension that
-invalidates sessions immediately; review-spam prevention by anchoring reviews to completed
-orders.
+that suppresses messages and conversation creation in both directions; review-spam prevention by
+anchoring reviews to completed orders. Admin suspension cuts off access the next time
+`getSession()` checks that account's status, not the instant it's clicked — see §10.
 
 ## 7. Transport and headers
 
-Set in `next.config.ts` and `middleware.ts`:
+Set in `next.config.ts` and `proxy.ts`:
 
 | Header | Value |
 | --- | --- |
@@ -145,3 +162,16 @@ Stated plainly rather than glossed over:
   has a provider.
 * Verification badges are manually granted by admins. That is an operational control, not a
   cryptographic one, and the badge copy says "verified by AgriLoop", not "identity verified".
+* **Two parallel copies of "people" exist right now.** The in-memory demo dataset (seeded
+  farmers/businesses/buyers, still used by the public marketplace directories, listings and admin
+  panel) and Supabase (the real, authoritative store for auth, a signed-in user's own profile
+  pages, and the account-completion flows). The 27 demo accounts exist in both, with matching ids,
+  so demo login and demo marketplace content both keep working — but a **new real signup's**
+  profile is Supabase-only: it does not yet appear in the public `/farmers` or `/businesses`
+  directories, and the admin panel's suspend/verify actions do not yet reach it. Closing this gap
+  means migrating the marketplace catalog itself onto Supabase, deliberately out of scope for this
+  pass — see the migration report.
+* No service-role key is configured (by design — see docs/SECURITY.md §8), so there is no
+  server-side "force sign out this user's other devices right now" capability. A suspended
+  account's active session is cut off the next time it's checked (`getSession()`), not the instant
+  an admin clicks suspend.

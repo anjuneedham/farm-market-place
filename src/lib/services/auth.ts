@@ -1,8 +1,9 @@
 import { db } from '@/lib/db/repositories';
-import { hashPassword, needsRehash, passwordProblem, verifyPassword } from '@/lib/auth/password';
-import { createSession } from '@/lib/auth/session';
+import { getUserRow } from '@/lib/supabase/account';
+import { createClient } from '@/lib/supabase/server';
 import { getCountry } from '@/lib/location';
 import { checkRateLimit } from '@/lib/security/rate-limit';
+import { siteUrl } from '@/lib/site-url';
 import { fail, ok, type ServiceResult } from '@/lib/integrations/types';
 import type { User } from '@/lib/types';
 import type { z } from 'zod';
@@ -17,36 +18,48 @@ type SignInInput = z.infer<typeof signInSchema>;
  */
 const GENERIC_CREDENTIALS_ERROR = 'Email or password is incorrect.';
 
+/**
+ * True once a Supabase account exists but hasn't confirmed its email yet —
+ * the caller has no session and no readable User row (RLS requires
+ * auth.uid(), which is null pre-confirmation), only the fact that signUp()
+ * itself succeeded.
+ */
+export type SignUpOutcome = { user: User; needsEmailConfirmation: false } | { user: null; needsEmailConfirmation: true };
+
+/** Translates a handful of common Supabase Auth errors into copy a user should see. */
+function humaniseAuthError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes('already registered') || lower.includes('already exists')) {
+    return 'An account with that email already exists.';
+  }
+  if (lower.includes('password')) {
+    return 'Choose a stronger password (at least 10 characters).';
+  }
+  if (lower.includes('email') && lower.includes('invalid')) {
+    return 'Enter a valid email address.';
+  }
+  return 'Something went wrong creating your account. Try again in a moment.';
+}
+
 export const authService = {
-  async signUp(input: SignUpInput): Promise<ServiceResult<User>> {
+  async signUp(input: SignUpInput): Promise<ServiceResult<SignUpOutcome>> {
     const limit = checkRateLimit('signUp', input.email);
     if (!limit.allowed) {
       return fail('rate_limited', 'Too many sign-up attempts. Try again in a few minutes.');
     }
 
-    const problem = passwordProblem(input.password);
-    if (problem) return fail('validation', problem, { password: problem });
-
     const country = getCountry(input.countryCode);
     if (!country) return fail('validation', 'Choose a country.', { countryCode: 'Choose a country.' });
     if (!country.isLive) {
-      return fail(
-        'validation',
-        `AgriLoop has not launched in ${country.name} yet.`,
-        { countryCode: `AgriLoop has not launched in ${country.name} yet.` },
-      );
+      return fail('validation', `AgriLoop has not launched in ${country.name} yet.`, {
+        countryCode: `AgriLoop has not launched in ${country.name} yet.`,
+      });
     }
 
     // A region must belong to the country it is claimed under.
     if (!db.locations.regionBelongsToCountry(input.regionId, country.code)) {
       return fail('validation', `Choose a ${country.regionLabel.toLowerCase()}.`, {
         regionId: `Choose a ${country.regionLabel.toLowerCase()}.`,
-      });
-    }
-
-    if (db.users.byEmail(input.email)) {
-      return fail('conflict', 'An account with that email already exists.', {
-        email: 'An account with that email already exists.',
       });
     }
 
@@ -59,61 +72,54 @@ export const authService = {
       });
     }
 
-    const user = db.users.create({
-      email: input.email,
-      passwordHash: hashPassword(input.password),
-      name: input.name,
-      role: input.role,
-      status: 'ACTIVE',
-    });
-
     const communityId =
       input.communityId && db.locations.communityBelongsToRegion(input.communityId, input.regionId)
         ? input.communityId
         : undefined;
 
-    switch (input.role) {
-      case 'FARMER':
-        db.profiles.createFarm({
-          userId: user.id,
-          name: input.farmName!,
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signUp({
+      email: input.email,
+      password: input.password,
+      options: {
+        emailRedirectTo: `${siteUrl()}/account`,
+        // Read by the handle_new_user()/unique_profile_slug() trigger in
+        // Postgres, which creates the User row and (when enough fields are
+        // present) the role-specific profile row atomically with the
+        // account itself — see supabase/migrations. 'ADMIN' is never
+        // honoured from client-supplied metadata.
+        data: {
+          full_name: input.name,
+          role: input.role,
           countryCode: country.code,
           regionId: input.regionId,
           communityId,
-          methods: [],
-          specialties: [],
-          galleryUrls: [],
-          acceptsPickup: true,
-          acceptsDelivery: false,
-        });
-        break;
-
-      case 'BUSINESS':
-        db.profiles.createBusiness({
-          userId: user.id,
-          name: input.businessName!,
-          type: input.businessType!,
-          countryCode: country.code,
-          regionId: input.regionId,
-          communityId,
-          servicesOffered: [],
-        });
-        break;
-
-      case 'BUYER':
-        db.profiles.createBuyer({
-          userId: user.id,
-          displayName: input.organisation?.trim() || input.name,
-          type: input.buyerType ?? 'HOUSEHOLD',
+          farmName: input.farmName,
+          businessName: input.businessName,
+          businessType: input.businessType,
+          buyerType: input.buyerType,
           organisation: input.organisation,
-          countryCode: country.code,
-          regionId: input.regionId,
-        });
-        break;
+        },
+      },
+    });
+
+    if (error) {
+      if (error.status === 429) return fail('rate_limited', 'Too many sign-up attempts. Try again in a few minutes.');
+      return fail('conflict', humaniseAuthError(error.message), { email: humaniseAuthError(error.message) });
+    }
+    if (!data.user) {
+      return fail('validation', 'Could not create your account. Try again.');
     }
 
-    await createSession(user.id);
-    return ok(user);
+    if (!data.session) {
+      return ok({ user: null, needsEmailConfirmation: true });
+    }
+
+    const user = await getUserRow(supabase, data.user.id);
+    if (!user) {
+      return fail('validation', 'Your account was created but could not be loaded. Try signing in.');
+    }
+    return ok({ user, needsEmailConfirmation: false });
   },
 
   async signIn(input: SignInInput): Promise<ServiceResult<User>> {
@@ -122,41 +128,51 @@ export const authService = {
       return fail('rate_limited', 'Too many sign-in attempts. Try again in a few minutes.');
     }
 
-    const user = db.users.byEmail(input.email);
-    if (!user) return fail('validation', GENERIC_CREDENTIALS_ERROR);
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: input.email,
+      password: input.password,
+    });
 
-    if (!verifyPassword(input.password, user.passwordHash)) {
+    if (error) {
+      if (error.status === 429) return fail('rate_limited', 'Too many sign-in attempts. Try again in a few minutes.');
+      if (error.message.toLowerCase().includes('email not confirmed')) {
+        return fail('forbidden', 'Confirm your email before signing in — check your inbox for the link we sent.');
+      }
       return fail('validation', GENERIC_CREDENTIALS_ERROR);
     }
+    if (!data.user) return fail('validation', GENERIC_CREDENTIALS_ERROR);
+
+    const user = await getUserRow(supabase, data.user.id);
+    if (!user) return fail('validation', GENERIC_CREDENTIALS_ERROR);
 
     if (user.status === 'SUSPENDED') {
+      await supabase.auth.signOut();
       return fail('forbidden', 'This account has been suspended. Contact AgriLoop support.');
     }
     if (user.status === 'PENDING_DELETION') {
+      await supabase.auth.signOut();
       return fail('forbidden', 'This account is scheduled for deletion.');
     }
 
-    // Transparent upgrade when hashing parameters have been raised since signup.
-    if (needsRehash(user.passwordHash)) {
-      db.users.update(user.id, { passwordHash: hashPassword(input.password) });
-    }
-
-    await createSession(user.id);
     return ok(user);
   },
 
   /**
    * Password reset request. Always reports success so the response cannot be
-   * used to discover whether an address is registered.
+   * used to discover whether an address is registered — Supabase's own API
+   * already behaves this way (it never reveals whether the email exists).
    */
   async requestPasswordReset(email: string): Promise<ServiceResult<null>> {
     const limit = checkRateLimit('passwordReset', email);
     if (!limit.allowed) {
       return fail('rate_limited', 'Too many requests. Try again later.');
     }
-    // Delivery is wired up once EmailService has a provider — see
-    // docs/MVP_ROADMAP.md. The token store (PasswordReset) already exists in
-    // the schema; nothing is sent today and the UI says so.
+
+    const supabase = await createClient();
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl()}/reset-password`,
+    });
     return ok(null);
   },
 };

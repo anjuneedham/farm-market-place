@@ -1,19 +1,9 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-
 /**
- * Password hashing — scrypt via node:crypto. See docs/SECURITY.md §1.
- *
- * The stored format embeds the algorithm and its parameters:
- *   scrypt$N$r$p$<salt-hex>$<hash-hex>
- * so parameters can be raised later and old hashes transparently upgraded on
- * the next successful sign-in.
+ * Password strength checks only — Supabase Auth owns hashing, storage and
+ * verification (see docs/SECURITY.md §1). This file exists so the signup
+ * form and validation schema can reject weak passwords before ever calling
+ * supabase.auth.signUp().
  */
-
-const N = 16384;
-const R = 8;
-const P = 1;
-const KEYLEN = 64;
-const SALT_BYTES = 16;
 
 export const MIN_PASSWORD_LENGTH = 10;
 export const MAX_PASSWORD_LENGTH = 200;
@@ -37,45 +27,6 @@ const OBVIOUS_PASSWORDS = new Set([
   'welcome123',
   'adminadmin',
 ]);
-
-export function hashPassword(password: string): string {
-  const salt = randomBytes(SALT_BYTES);
-  const derived = scryptSync(password.normalize('NFKC'), salt, KEYLEN, { N, r: R, p: P });
-  return ['scrypt', N, R, P, salt.toString('hex'), derived.toString('hex')].join('$');
-}
-
-export function verifyPassword(password: string, stored: string): boolean {
-  const parts = stored.split('$');
-  if (parts.length !== 6 || parts[0] !== 'scrypt') return false;
-
-  const n = Number(parts[1]);
-  const r = Number(parts[2]);
-  const p = Number(parts[3]);
-  const saltHex = parts[4];
-  const hashHex = parts[5];
-  if (!saltHex || !hashHex || !Number.isFinite(n) || !Number.isFinite(r) || !Number.isFinite(p)) {
-    return false;
-  }
-
-  try {
-    const expected = Buffer.from(hashHex, 'hex');
-    const derived = scryptSync(password.normalize('NFKC'), Buffer.from(saltHex, 'hex'), expected.length, {
-      N: n,
-      r,
-      p,
-    });
-    return timingSafeEqual(derived, expected);
-  } catch {
-    return false;
-  }
-}
-
-/** True when a hash was made with weaker parameters and should be upgraded. */
-export function needsRehash(stored: string): boolean {
-  const parts = stored.split('$');
-  if (parts.length !== 6 || parts[0] !== 'scrypt') return true;
-  return Number(parts[1]) < N || Number(parts[2]) < R || Number(parts[3]) < P;
-}
 
 export function passwordProblem(password: string): string | null {
   if (password.length < MIN_PASSWORD_LENGTH) {

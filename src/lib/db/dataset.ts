@@ -33,7 +33,6 @@ import type {
   RequestResponse,
   Review,
   SearchQueryLog,
-  SessionRecord,
   ShoppingList,
   ShoppingListItem,
   Subscription,
@@ -56,7 +55,6 @@ export type DataSet = {
   communities: Community[];
 
   users: User[];
-  sessions: SessionRecord[];
   farms: FarmProfile[];
   farmUpdates: FarmUpdate[];
   businesses: BusinessProfile[];
@@ -111,7 +109,6 @@ export function emptyDataSet(): DataSet {
     regions: [],
     communities: [],
     users: [],
-    sessions: [],
     farms: [],
     farmUpdates: [],
     businesses: [],

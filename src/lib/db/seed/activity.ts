@@ -11,7 +11,7 @@ import type {
   Subscription,
   Verification,
 } from '@/lib/types';
-import { daysAgo, daysAhead } from './helpers';
+import { daysAgo, daysAhead, demoUserId } from './helpers';
 
 type OrderSeed = {
   buyer: string;
@@ -164,8 +164,8 @@ export function seedActivity(): SeededActivity {
 
   ORDERS.forEach((seed, index) => {
     const id = `order_${index + 1}`;
-    const buyerId = `user_buyer_${seed.buyer}`;
-    const sellerId = `user_farmer_${seed.seller}`;
+    const buyerId = demoUserId(`user_buyer_${seed.buyer}`);
+    const sellerId = demoUserId(`user_farmer_${seed.seller}`);
     const subtotal = seed.items.reduce((sum, [, , quantity, price]) => sum + quantity * price, 0);
     const saved = seed.savedMinor ?? 0;
 
@@ -258,8 +258,8 @@ export function seedActivity(): SeededActivity {
 
   thread(
     1,
-    'user_buyer_harbour-street-kitchen',
-    'user_farmer_green-valley-farm',
+    demoUserId('user_buyer_harbour-street-kitchen'),
+    demoUserId('user_farmer_green-valley-farm'),
     'listing_2_plum-tomato-field-grown',
     [
       ['a', 'Good morning. Do you have 200 lbs of the plum tomato available for Tuesday?', 30],
@@ -276,8 +276,8 @@ export function seedActivity(): SeededActivity {
 
   thread(
     2,
-    'user_buyer_sunrise-fresh-market',
-    'user_farmer_clarendon-plains-poultry',
+    demoUserId('user_buyer_sunrise-fresh-market'),
+    demoUserId('user_farmer_clarendon-plains-poultry'),
     'listing_8_fresh-brown-eggs-daily',
     [
       ['a', 'We need about 40 dozen a day across two stores in St. Andrew. Can you commit to that?', 20],
@@ -292,8 +292,8 @@ export function seedActivity(): SeededActivity {
 
   thread(
     3,
-    'user_buyer_rose-hall-bay-hotel',
-    'user_farmer_anchovy-apiary',
+    demoUserId('user_buyer_rose-hall-bay-hotel'),
+    demoUserId('user_farmer_anchovy-apiary'),
     'listing_23_raw-honey-750ml-bottle',
     [
       ['a', 'Are you able to hold 40 bottles a month with consistent labelling?', 50],
@@ -305,28 +305,28 @@ export function seedActivity(): SeededActivity {
   const favorites: Favorite[] = [
     {
       id: 'favorite_1',
-      userId: 'user_buyer_harbour-street-kitchen',
+      userId: demoUserId('user_buyer_harbour-street-kitchen'),
       kind: 'LISTING',
       targetId: 'listing_1_fresh-scotch-bonnet-pepper',
       createdAt: daysAgo(3),
     },
     {
       id: 'favorite_2',
-      userId: 'user_buyer_harbour-street-kitchen',
+      userId: demoUserId('user_buyer_harbour-street-kitchen'),
       kind: 'FARM',
       targetId: 'farm_green-valley-farm',
       createdAt: daysAgo(5),
     },
     {
       id: 'favorite_3',
-      userId: 'user_buyer_harbour-street-kitchen',
+      userId: demoUserId('user_buyer_harbour-street-kitchen'),
       kind: 'FARM',
       targetId: 'farm_mavis-bank-hill-farm',
       createdAt: daysAgo(2),
     },
     {
       id: 'favorite_4',
-      userId: 'user_buyer_rose-hall-bay-hotel',
+      userId: demoUserId('user_buyer_rose-hall-bay-hotel'),
       kind: 'FARM',
       targetId: 'farm_bluefields-ridge-growers',
       createdAt: daysAgo(7),
@@ -336,7 +336,7 @@ export function seedActivity(): SeededActivity {
   const shoppingLists: ShoppingList[] = [
     {
       id: 'list_1',
-      ownerId: 'user_buyer_harbour-street-kitchen',
+      ownerId: demoUserId('user_buyer_harbour-street-kitchen'),
       name: 'Weekly Restaurant Supply',
       notes: 'Standing order, delivered Tuesday morning.',
       isDemoData: true,
@@ -345,7 +345,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'list_2',
-      ownerId: 'user_buyer_rose-hall-bay-hotel',
+      ownerId: demoUserId('user_buyer_rose-hall-bay-hotel'),
       name: 'Wednesday Hotel Delivery',
       isDemoData: true,
       createdAt: daysAgo(45),
@@ -367,7 +367,7 @@ export function seedActivity(): SeededActivity {
   const notifications: Notification[] = [
     {
       id: 'notification_1',
-      userId: 'user_farmer_green-valley-farm',
+      userId: demoUserId('user_farmer_green-valley-farm'),
       type: 'BUYER_REQUEST',
       title: 'New buyer request in Kingston',
       body: 'Harbour Street Kitchen is looking for 200 lbs tomato every week.',
@@ -376,7 +376,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'notification_2',
-      userId: 'user_farmer_green-valley-farm',
+      userId: demoUserId('user_farmer_green-valley-farm'),
       type: 'REVIEW',
       title: 'Kingston Spice Works left you a 5-star review',
       href: '/farmers/green-valley-farm',
@@ -385,7 +385,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'notification_3',
-      userId: 'user_buyer_harbour-street-kitchen',
+      userId: demoUserId('user_buyer_harbour-street-kitchen'),
       type: 'REQUEST_RESPONSE',
       title: '2 farmers responded to your tomato request',
       href: '/requests/200-lbs-tomato-every-week-1',
@@ -396,7 +396,7 @@ export function seedActivity(): SeededActivity {
   const verifications: Verification[] = [
     {
       id: 'verification_1',
-      subjectId: 'user_farmer_portland-rain-farm',
+      subjectId: demoUserId('user_farmer_portland-rain-farm'),
       kind: 'FARMER',
       status: 'PENDING',
       note: 'Requested verification after third completed order.',
@@ -405,7 +405,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'verification_2',
-      subjectId: 'user_farmer_highgate-spice-gardens',
+      subjectId: demoUserId('user_farmer_highgate-spice-gardens'),
       kind: 'FARMER',
       status: 'PENDING',
       evidenceUrls: [],
@@ -413,7 +413,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'verification_3',
-      subjectId: 'user_business_highway-produce-haulage',
+      subjectId: demoUserId('user_business_highway-produce-haulage'),
       kind: 'BUSINESS',
       status: 'PENDING',
       evidenceUrls: [],
@@ -425,7 +425,7 @@ export function seedActivity(): SeededActivity {
   const subscriptions: Subscription[] = [
     {
       id: 'subscription_1',
-      userId: 'user_farmer_green-valley-farm',
+      userId: demoUserId('user_farmer_green-valley-farm'),
       planId: 'plan_jm_farmer_monthly',
       status: 'ACTIVE',
       startedAt: daysAgo(60),
@@ -436,7 +436,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'subscription_2',
-      userId: 'user_farmer_spaldings-greenhouse-co-op',
+      userId: demoUserId('user_farmer_spaldings-greenhouse-co-op'),
       planId: 'plan_jm_farmer_monthly',
       status: 'ACTIVE',
       startedAt: daysAgo(40),
@@ -447,7 +447,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'subscription_3',
-      userId: 'user_buyer_harbour-street-kitchen',
+      userId: demoUserId('user_buyer_harbour-street-kitchen'),
       planId: 'plan_jm_buyer_monthly',
       status: 'ACTIVE',
       startedAt: daysAgo(90),
@@ -458,7 +458,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'subscription_4',
-      userId: 'user_buyer_rose-hall-bay-hotel',
+      userId: demoUserId('user_buyer_rose-hall-bay-hotel'),
       planId: 'plan_jm_buyer_monthly',
       status: 'ACTIVE',
       startedAt: daysAgo(75),
@@ -469,7 +469,7 @@ export function seedActivity(): SeededActivity {
     },
     {
       id: 'subscription_5',
-      userId: 'user_farmer_anchovy-apiary',
+      userId: demoUserId('user_farmer_anchovy-apiary'),
       planId: 'plan_jm_farmer_yearly',
       status: 'ACTIVE',
       startedAt: daysAgo(120),

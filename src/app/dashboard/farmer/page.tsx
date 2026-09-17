@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Eye, Heart, MessageCircle, Package, TrendingUp } from 'lucide-react';
 import { requireRole } from '@/lib/auth/session';
 import { db } from '@/lib/db/repositories';
+import { getFarmProfile } from '@/lib/supabase/account';
+import { createClient } from '@/lib/supabase/server';
 import { sellerStats } from '@/lib/services/stats';
 import { premiumService } from '@/lib/services/premium';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
@@ -20,7 +22,8 @@ export default async function FarmerDashboardPage() {
   const { user } = await requireRole(['FARMER', 'BUSINESS'], '/dashboard/farmer');
   const stats = sellerStats(user.id);
   const isPremium = premiumService.isPremium(user.id);
-  const farm = db.profiles.farmByUserId(user.id);
+  const supabase = await createClient();
+  const farm = await getFarmProfile(supabase, user.id);
   const currency = farm ? db.locations.country(farm.countryCode)?.currency ?? 'JMD' : 'JMD';
 
   return (

@@ -1,5 +1,5 @@
 import type { BuyerRequest, RequestResponse } from '@/lib/types';
-import { communityId, daysAgo, daysAhead, regionId, slugify } from './helpers';
+import { communityId, daysAgo, daysAhead, demoUserId, regionId, slugify } from './helpers';
 
 type RequestSeed = {
   buyer: string;
@@ -250,7 +250,7 @@ export function seedBuyerRequests(): SeededRequests {
     const id = `request_${index + 1}`;
     buyerRequests.push({
       id,
-      buyerId: `user_buyer_${seed.buyer}`,
+      buyerId: demoUserId(`user_buyer_${seed.buyer}`),
       categoryId: seed.categorySlug ? `cat_${seed.categorySlug}` : undefined,
       title: seed.title,
       slug: `${slugify(seed.title)}-${index + 1}`,
@@ -276,7 +276,7 @@ export function seedBuyerRequests(): SeededRequests {
       requestResponses.push({
         id: `response_${index + 1}_${responseIndex + 1}`,
         buyerRequestId: id,
-        responderId: `user_farmer_${response.farm}`,
+        responderId: demoUserId(`user_farmer_${response.farm}`),
         message: response.message,
         quotedPriceMinor: response.price,
         currency: response.price ? 'JMD' : undefined,

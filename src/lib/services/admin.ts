@@ -8,10 +8,18 @@ import type { User, UserStatus } from '@/lib/types';
  * only ever invoked from server actions in src/app/admin/**, which do.
  */
 export const adminService = {
+  /**
+   * Operates on the in-memory demo copy of accounts (see
+   * src/lib/db/repositories/users.ts's header comment) — it does not yet
+   * reach a real Supabase account's status, since that would need the
+   * service-role key this app deliberately never holds. A suspended demo
+   * user can therefore still sign in via Supabase Auth today; extending
+   * admin moderation to real accounts is a follow-up, not silently faked
+   * here.
+   */
   setUserStatus(userId: string, status: UserStatus): ServiceResult<User> {
     const user = db.users.update(userId, { status });
     if (!user) return fail('not_found', 'User not found.');
-    if (status === 'SUSPENDED') db.sessions.destroyAllForUser(userId);
     return ok(user);
   },
 

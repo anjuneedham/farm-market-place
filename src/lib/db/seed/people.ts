@@ -1,11 +1,10 @@
-import { hashPassword } from '@/lib/auth/password';
 import type {
   BusinessProfile,
   BuyerProfile,
   FarmProfile,
   User,
 } from '@/lib/types';
-import { communityId, daysAgo, regionId, slugify } from './helpers';
+import { communityId, daysAgo, demoUserId, regionId, slugify } from './helpers';
 
 /**
  * Demo accounts. Every name here is fictional. All records carry
@@ -441,7 +440,6 @@ export type SeededPeople = {
 };
 
 export function seedPeople(): SeededPeople {
-  const passwordHash = hashPassword(DEMO_PASSWORD);
   const users: User[] = [];
   const farms: FarmProfile[] = [];
   const businesses: BusinessProfile[] = [];
@@ -457,7 +455,6 @@ export function seedPeople(): SeededPeople {
   ): User => ({
     id,
     email,
-    passwordHash,
     name,
     role,
     status: 'ACTIVE',
@@ -469,14 +466,14 @@ export function seedPeople(): SeededPeople {
   });
 
   users.push(
-    baseUser('user_admin', 'AgriLoop Operations', 'admin@agriloop.demo', 'ADMIN', 200, {
+    baseUser(demoUserId('user_admin'), 'AgriLoop Operations', 'admin@agriloop.demo', 'ADMIN', 200, {
       lastSeenAt: daysAgo(0),
     }),
   );
 
   FARMERS.forEach((seed, index) => {
     const farmSlug = slugify(seed.farm);
-    const userId = `user_farmer_${farmSlug}`;
+    const userId = demoUserId(`user_farmer_${farmSlug}`);
     const createdDaysAgo = 150 - index * 7;
 
     users.push(
@@ -517,7 +514,7 @@ export function seedPeople(): SeededPeople {
 
   BUSINESSES.forEach((seed, index) => {
     const bizSlug = slugify(seed.business);
-    const userId = `user_business_${bizSlug}`;
+    const userId = demoUserId(`user_business_${bizSlug}`);
     const createdDaysAgo = 120 - index * 9;
 
     users.push(
@@ -550,7 +547,7 @@ export function seedPeople(): SeededPeople {
 
   BUYERS.forEach((seed, index) => {
     const buyerSlug = slugify(seed.display);
-    const userId = `user_buyer_${buyerSlug}`;
+    const userId = demoUserId(`user_buyer_${buyerSlug}`);
     const createdDaysAgo = 100 - index * 6;
 
     users.push(

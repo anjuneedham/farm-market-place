@@ -1,6 +1,6 @@
 import type { Listing, PriceTier } from '@/lib/types';
 import { seedProducts } from './catalog';
-import { communityId, daysAgo, daysAhead, regionId, slugify } from './helpers';
+import { communityId, daysAgo, daysAhead, demoUserId, regionId, slugify } from './helpers';
 
 type ListingSeed = {
   /** Farm or business slug, matching src/lib/db/seed/people.ts. */
@@ -735,8 +735,9 @@ export function seedListings(): SeededListings {
       throw new Error(`Seed listing references unknown product "${seed.product}"`);
     }
 
-    const sellerId =
-      seed.sellerKind === 'farm' ? `user_farmer_${seed.seller}` : `user_business_${seed.seller}`;
+    const sellerId = demoUserId(
+      seed.sellerKind === 'farm' ? `user_farmer_${seed.seller}` : `user_business_${seed.seller}`,
+    );
     const id = `listing_${index + 1}_${slugify(seed.title)}`.slice(0, 60);
     const pricingMode = seed.pricingMode ?? (seed.wholesale ? 'WHOLESALE' : 'FIXED');
 

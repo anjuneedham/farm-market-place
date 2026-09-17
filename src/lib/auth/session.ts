@@ -1,37 +1,30 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { db } from '@/lib/db/repositories';
+import { createClient } from '@/lib/supabase/server';
+import { getUserRow } from '@/lib/supabase/account';
 import type { User, UserRole } from '@/lib/types';
-import { SESSION_COOKIE, createToken, hashToken, sessionDurationDays, signToken, unsignToken } from './tokens';
 
 export type Session = { user: User };
 
 /**
- * Reads the session cookie, verifies its signature, then looks the session up
- * by token hash. A forged cookie is rejected before any data access happens.
+ * Reads the Supabase Auth session from cookies (refreshed on every request
+ * by proxy.ts) and joins it to the matching public."User" row. `auth.getUser()`
+ * — not `getSession()` — is used deliberately: it revalidates the JWT against
+ * Supabase's server on every call rather than trusting a cookie payload the
+ * client could have tampered with. See docs/SECURITY.md §2.
  */
 export async function getSession(): Promise<Session | null> {
-  const store = await cookies();
-  const signed = store.get(SESSION_COOKIE)?.value;
-  if (!signed) return null;
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  if (!authUser) return null;
 
-  const token = unsignToken(signed);
-  if (!token) return null;
-
-  const record = db.sessions.byTokenHash(hashToken(token));
-  if (!record) return null;
-
-  if (Date.parse(record.expiresAt) <= Date.now()) {
-    db.sessions.destroy(record.tokenHash);
-    return null;
-  }
-
-  const user = db.users.byId(record.userId);
+  const user = await getUserRow(supabase, authUser.id);
   if (!user) return null;
 
   // A suspended account loses access immediately, not at next sign-in.
   if (user.status !== 'ACTIVE') {
-    db.sessions.destroyAllForUser(user.id);
+    await supabase.auth.signOut();
     return null;
   }
 
@@ -42,34 +35,18 @@ export async function getCurrentUser(): Promise<User | null> {
   return (await getSession())?.user ?? null;
 }
 
-export async function createSession(userId: string): Promise<void> {
-  const token = createToken();
-  const expiresAt = new Date(Date.now() + sessionDurationDays() * 24 * 60 * 60 * 1000);
-
-  // Only the hash is persisted, so a database leak yields no usable session.
-  db.sessions.create(userId, hashToken(token), expiresAt.toISOString());
-  db.users.touch(userId);
-
-  const store = await cookies();
-  store.set(SESSION_COOKIE, signToken(token), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    expires: expiresAt,
-  });
-}
+/**
+ * A no-op today: supabase.auth.signInWithPassword()/signUp() already set the
+ * session cookies themselves (via the server client's cookie adapter) at the
+ * moment they succeed, in src/lib/services/auth.ts. Kept as an exported,
+ * awaitable function so call sites don't need to change if that ever stops
+ * being true.
+ */
+export async function createSession(): Promise<void> {}
 
 export async function destroySession(): Promise<void> {
-  const store = await cookies();
-  const signed = store.get(SESSION_COOKIE)?.value;
-
-  if (signed) {
-    const token = unsignToken(signed);
-    if (token) db.sessions.destroy(hashToken(token));
-  }
-
-  store.delete(SESSION_COOKIE);
+  const supabase = await createClient();
+  await supabase.auth.signOut();
 }
 
 /** Redirects to sign-in, preserving where the user was going. */
