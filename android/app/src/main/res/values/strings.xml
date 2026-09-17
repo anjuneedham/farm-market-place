@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AgriLoop</string>
+    <string name="title_activity_main">AgriLoop</string>
+    <string name="package_name">com.agriloop.app</string>
+    <string name="custom_url_scheme">com.agriloop.app</string>
+</resources>

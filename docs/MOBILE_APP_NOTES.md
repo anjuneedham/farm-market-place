@@ -5,6 +5,13 @@ the web app. This document exists so that decision isn't lost between now
 (web-only, PayPal Express Checkout for Premium) and whenever the native app
 gets built. Read this before adding in-app purchases to a native build.
 
+**Status:** an Android shell now exists (`android/`, via Capacitor — see
+docs/PLAY_STORE_TESTING.md for build/signing/Play Console setup). It loads
+the live web app remotely rather than bundling a native rewrite, so
+everything below about payments still applies unchanged: the shell does not
+touch checkout at all yet, and §1's Google Play Billing requirement is the
+gating item before any *public* Play Store track.
+
 ---
 
 ## 1. The payment integration built today does not carry over as-is

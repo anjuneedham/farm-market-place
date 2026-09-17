@@ -68,6 +68,8 @@ src/lib/
   auth/                   Password hashing, session tokens, permissions
   validation/             zod schemas
   location/               Country/parish configuration (Jamaica live, 12 more modelled)
+android/                 Capacitor Android shell (loads the live deployment remotely — see docs/PLAY_STORE_TESTING.md)
+capacitor.config.ts      Android shell config (requires AGRILOOP_APP_URL — see docs/PLAY_STORE_TESTING.md)
 ```
 
 ## What's real vs. architected

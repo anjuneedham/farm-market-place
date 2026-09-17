@@ -37,3 +37,17 @@ yarn-error.log*
 .agents/
 .claude/
 skills-lock.json
+
+# Android (Capacitor) — build output and machine-local config regenerate via
+# `npx cap sync android`; never commit signing secrets (see docs/PLAY_STORE_TESTING.md)
+android/app/build/
+android/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/*.keystore
+android/app/*.jks
+android/keystore.properties
+android/captures/
+android/*.iml
+android/app/*.iml
