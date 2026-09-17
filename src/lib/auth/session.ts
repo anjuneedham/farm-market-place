@@ -6,29 +6,53 @@ import type { User, UserRole } from '@/lib/types';
 export type Session = { user: User };
 
 /**
+ * Next.js signals redirect(), notFound(), and "this route needs dynamic
+ * rendering" by throwing a special object carrying a `digest` string — not
+ * a real error. A generic catch here must let those through unmodified;
+ * swallowing them breaks Next's own static-generation detection (it did,
+ * during a build, before this check was added).
+ */
+function isNextInternalSignal(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'digest' in error;
+}
+
+/**
  * Reads the Supabase Auth session from cookies (refreshed on every request
  * by proxy.ts) and joins it to the matching public."User" row. `auth.getUser()`
  * — not `getSession()` — is used deliberately: it revalidates the JWT against
  * Supabase's server on every call rather than trusting a cookie payload the
  * client could have tampered with. See docs/SECURITY.md §2.
+ *
+ * getCurrentUser() is called from the root layout's Header on every single
+ * page, so a Supabase misconfiguration or outage here must degrade to
+ * "nobody's signed in" rather than crashing every page on the site — it's
+ * caught and logged instead of thrown. This never loosens security: every
+ * real gate (requireSession, requireRole, RLS) treats a null session as
+ * unauthenticated and denies by default.
  */
 export async function getSession(): Promise<Session | null> {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-  if (!authUser) return null;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser) return null;
 
-  const user = await getUserRow(supabase, authUser.id);
-  if (!user) return null;
+    const user = await getUserRow(supabase, authUser.id);
+    if (!user) return null;
 
-  // A suspended account loses access immediately, not at next sign-in.
-  if (user.status !== 'ACTIVE') {
-    await supabase.auth.signOut();
+    // A suspended account loses access immediately, not at next sign-in.
+    if (user.status !== 'ACTIVE') {
+      await supabase.auth.signOut();
+      return null;
+    }
+
+    return { user };
+  } catch (error) {
+    if (isNextInternalSignal(error)) throw error;
+    console.error('[session] getSession() failed — treating as signed out:', error);
     return null;
   }
-
-  return { user };
 }
 
 export async function getCurrentUser(): Promise<User | null> {
