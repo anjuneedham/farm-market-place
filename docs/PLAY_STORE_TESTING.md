@@ -48,10 +48,15 @@ deferred, not decoration.
 
 ```bash
 npm install
-export AGRILOOP_APP_URL=https://your-real-deployment.example.com   # no default on purpose — see capacitor.config.ts
+export AGRILOOP_APP_URL=https://agriloopmain.vercel.app   # the live deployment — no default on purpose, see capacitor.config.ts
 npm run android:sync     # copies config into android/, no-op on web assets since we load remotely
 npm run android:open     # opens android/ in Android Studio
 ```
+
+(`npx cap sync android` with this exact URL has been verified to generate
+`android/app/src/main/assets/capacitor.config.json` correctly — the sandbox this was built in
+cannot reach `*.vercel.app` itself due to its own outbound network policy, so open the URL in an
+actual browser to confirm the deployment is live before building.)
 
 From Android Studio: **Build → Generate Signed Bundle / APK → Android App Bundle**, or from the
 command line once you have a signing config (§4):
